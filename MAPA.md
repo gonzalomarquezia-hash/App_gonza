@@ -93,6 +93,17 @@ Objetivo: verla andando en la tablet en **días**, fea pero viva. Primer campame
 
 ---
 
+## 🧭 Fase 2 — Detalle por hábito (destino elegido)
+Tocar un hábito y entrar a SU pantalla. Las "etapas/fases" = los **campamentos** que ya existen.
+
+- [x] **Paso 1 — Pantalla propia.** Ruta `/habitos/[id]`. Tocar un hábito en la lista lo abre.
+      Muestra lo que YA tenemos: nombre, tipo, racha, acumulado y sus campamentos. Solo lectura.
+- [ ] **Paso 2 — Editar campamentos.** Desde esa pantalla: agregar / sacar / cambiar día y
+      recompensa. (Hoy los días están fijos en 7/30/90; acá se vuelven flexibles.)
+- [ ] **Paso 3 — Notas del hábito.** Tabla nueva `notes` (hábito + fecha + texto). Escribir y
+      ver el historial dentro del detalle. (Empieza a alimentar el futuro resumen mensual.)
+
+> Regla: un paso a la vez. No se abre el Paso 2 hasta que el Paso 1 está vivo.
+
 ## 👉 Próximo paso (uno)
-Fase 1 cerrada. Elegir UN destino de la lista del estacionamiento para la Fase 2
-(recomendado: empezar por lo más usado a diario, no por lo más ambicioso).
+Fase 2 · Paso 2 — Editar campamentos desde el detalle (agregar/sacar/cambiar día y recompensa).

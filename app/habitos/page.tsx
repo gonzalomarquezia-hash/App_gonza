@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getHabits, createHabit, deleteHabit } from '@/lib/habits';
 import type { Habit, HabitType } from '@/lib/types';
 import { PageContainer, ErrorBox } from '@/components/ui';
@@ -95,12 +96,16 @@ export default function Habitos() {
           {habits.map((h) => (
             <div
               key={h.id}
-              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
             >
-              <div className="text-sm">
+              <Link
+                href={`/habitos/${h.id}`}
+                className="flex flex-1 items-center text-sm hover:text-slate-300"
+              >
                 <span className="mr-2">{h.type === 'avoid' ? '🔴' : '🟢'}</span>
                 {h.name}
-              </div>
+                <span className="ml-2 text-slate-500">›</span>
+              </Link>
               <button
                 onClick={() => del(h)}
                 className="text-xs text-slate-500 hover:text-rose-300"
