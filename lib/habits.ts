@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { Habit, Camp, Checkin, CheckinState, HabitType, HabitStats } from './types';
+import type { Habit, Camp, Checkin, CheckinState, HabitType, HabitStats, Note } from './types';
 
 export const DAY_MS = 86_400_000;
 
@@ -88,6 +88,28 @@ export async function setCamps(habitId: string, camps: Camp[]): Promise<void> {
   }
   const clean = [...byDay.values()].sort((a, b) => a.day - b.day);
   const { error } = await supabase.from('habits').update({ camps: clean }).eq('id', habitId);
+  if (error) throw error;
+}
+
+// ---- Notas ----
+
+export async function getNotes(habitId: string): Promise<Note[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('habit_id', habitId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data as Note[];
+}
+
+export async function addNote(habitId: string, text: string): Promise<void> {
+  const { error } = await supabase.from('notes').insert({ habit_id: habitId, text });
+  if (error) throw error;
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  const { error } = await supabase.from('notes').delete().eq('id', id);
   if (error) throw error;
 }
 

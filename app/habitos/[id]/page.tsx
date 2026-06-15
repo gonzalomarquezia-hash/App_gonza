@@ -2,8 +2,16 @@
 
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getHabits, getCheckins, computeStats, setCamps } from '@/lib/habits';
-import type { Habit, Camp, Checkin } from '@/lib/types';
+import {
+  getHabits,
+  getCheckins,
+  computeStats,
+  setCamps,
+  getNotes,
+  addNote,
+  deleteNote,
+} from '@/lib/habits';
+import type { Habit, Camp, Checkin, Note } from '@/lib/types';
 import { PageContainer, ErrorBox } from '@/components/ui';
 
 export default function HabitoDetalle({ params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +24,21 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Camp[]>([]);
   const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
+  const [notesReady, setNotesReady] = useState(true);
+
+  const refreshNotes = useCallback(async (habitId: string) => {
+    try {
+      setNotes(await getNotes(habitId));
+      setNotesReady(true);
+    } catch {
+      // La tabla `notes` todavía no existe en Supabase: degradamos sin romper la pantalla.
+      setNotes([]);
+      setNotesReady(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -24,12 +47,33 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
       const h = hs.find((x) => x.id === id) ?? null;
       setHabit(h);
       setCheckins(h && h.type === 'do' ? await getCheckins(h.id) : []);
+      if (h) await refreshNotes(h.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, refreshNotes]);
+
+  async function submitNote() {
+    if (!habit || !noteDraft.trim()) return;
+    setAddingNote(true);
+    try {
+      await addNote(habit.id, noteDraft.trim());
+      setNoteDraft('');
+      await refreshNotes(habit.id);
+    } catch {
+      setNotesReady(false);
+    } finally {
+      setAddingNote(false);
+    }
+  }
+
+  async function removeNote(noteId: string) {
+    if (!habit) return;
+    await deleteNote(noteId);
+    await refreshNotes(habit.id);
+  }
 
   function startEdit() {
     if (!habit) return;
@@ -234,6 +278,51 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
               </div>
             );
           })}
+        </div>
+      )}
+
+      <h2 className="mt-8 mb-2 text-sm font-medium text-slate-300">Notas</h2>
+      {!notesReady && (
+        <div className="mb-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          Falta activar las notas: corré <code>supabase/schema.sql</code> en el SQL Editor de
+          Supabase (crea la tabla <code>notes</code>) y recargá.
+        </div>
+      )}
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <textarea
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          placeholder="¿Cómo te fue hoy con esto?"
+          rows={2}
+          className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-white/30"
+        />
+        <button
+          onClick={submitNote}
+          disabled={addingNote || !noteDraft.trim()}
+          className="mt-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-950 hover:bg-slate-200 disabled:opacity-50"
+        >
+          {addingNote ? 'Guardando…' : 'Agregar nota'}
+        </button>
+      </div>
+
+      {notes.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500">Todavía no escribiste ninguna nota.</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {notes.map((n) => (
+            <div key={n.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <p className="whitespace-pre-wrap text-sm text-slate-200">{n.text}</p>
+                <button
+                  onClick={() => removeNote(n.id)}
+                  className="shrink-0 text-xs text-slate-500 hover:text-rose-300"
+                >
+                  Borrar
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">{n.day}</p>
+            </div>
+          ))}
         </div>
       )}
     </PageContainer>

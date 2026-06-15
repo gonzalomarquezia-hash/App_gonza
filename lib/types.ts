@@ -15,6 +15,14 @@ export interface Habit {
   created_at: string;
 }
 
+export interface Note {
+  id: string;
+  habit_id: string;
+  day: string; // YYYY-MM-DD
+  text: string;
+  created_at: string;
+}
+
 export type CheckinState = 'done' | 'rest';
 
 export interface Checkin {

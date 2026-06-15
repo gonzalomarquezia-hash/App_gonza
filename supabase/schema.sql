@@ -22,12 +22,24 @@ create table if not exists checkins (
   unique (habit_id, day)
 );
 
+-- Notas atadas a un hábito (Fase 2 · Paso 3). Cómo me fue, anotaciones del día.
+create table if not exists notes (
+  id         uuid primary key default gen_random_uuid(),
+  habit_id   uuid not null references habits(id) on delete cascade,
+  day        date not null default current_date,
+  text       text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists notes_habit_idx on notes (habit_id, created_at desc);
+
 -- MVP: un solo usuario, sin login todavía. Sin RLS por ahora.
 -- (Antes de sumar hábitos sensibles agregamos auth + RLS.)
 alter table habits   disable row level security;
 alter table checkins disable row level security;
+alter table notes    disable row level security;
 grant all on table habits   to anon, authenticated;
 grant all on table checkins to anon, authenticated;
+grant all on table notes    to anon, authenticated;
 
 -- Semilla: tu primer hábito (solo si la tabla está vacía).
 insert into habits (name, type)
