@@ -98,12 +98,12 @@ Tocar un hábito y entrar a SU pantalla. Las "etapas/fases" = los **campamentos*
 
 - [x] **Paso 1 — Pantalla propia.** Ruta `/habitos/[id]`. Tocar un hábito en la lista lo abre.
       Muestra lo que YA tenemos: nombre, tipo, racha, acumulado y sus campamentos. Solo lectura.
-- [ ] **Paso 2 — Editar campamentos.** Desde esa pantalla: agregar / sacar / cambiar día y
-      recompensa. (Hoy los días están fijos en 7/30/90; acá se vuelven flexibles.)
+- [x] **Paso 2 — Editar campamentos.** Desde esa pantalla: agregar / sacar / cambiar día y
+      recompensa. (Días flexibles; se ordenan y dedupean solos.)
 - [ ] **Paso 3 — Notas del hábito.** Tabla nueva `notes` (hábito + fecha + texto). Escribir y
       ver el historial dentro del detalle. (Empieza a alimentar el futuro resumen mensual.)
 
 > Regla: un paso a la vez. No se abre el Paso 2 hasta que el Paso 1 está vivo.
 
 ## 👉 Próximo paso (uno)
-Fase 2 · Paso 2 — Editar campamentos desde el detalle (agregar/sacar/cambiar día y recompensa).
+Fase 2 · Paso 3 — Notas del hábito (tabla `notes`: hábito + fecha + texto; escribir y ver historial).

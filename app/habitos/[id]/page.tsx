@@ -2,8 +2,8 @@
 
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getHabits, getCheckins, computeStats } from '@/lib/habits';
-import type { Habit, Checkin } from '@/lib/types';
+import { getHabits, getCheckins, computeStats, setCamps } from '@/lib/habits';
+import type { Habit, Camp, Checkin } from '@/lib/types';
 import { PageContainer, ErrorBox } from '@/components/ui';
 
 export default function HabitoDetalle({ params }: { params: Promise<{ id: string }> }) {
@@ -13,6 +13,9 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Camp[]>([]);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -27,6 +30,38 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
       setLoading(false);
     }
   }, [id]);
+
+  function startEdit() {
+    if (!habit) return;
+    setDraft([...habit.camps].sort((a, b) => a.day - b.day));
+    setEditing(true);
+  }
+
+  function updateRow(i: number, patch: Partial<Camp>) {
+    setDraft((d) => d.map((c, j) => (j === i ? { ...c, ...patch } : c)));
+  }
+
+  function addRow() {
+    setDraft((d) => [...d, { day: 0, reward: '' }]);
+  }
+
+  function removeRow(i: number) {
+    setDraft((d) => d.filter((_, j) => j !== i));
+  }
+
+  async function saveCamps() {
+    if (!habit) return;
+    setSaving(true);
+    try {
+      await setCamps(habit.id, draft);
+      setEditing(false);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     load();
@@ -93,37 +128,114 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
         <span className="text-slate-500"> · acumulado de por vida {stats.lifetime}</span>
       </p>
 
-      <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Campamentos</h2>
-      <div className="space-y-2">
-        {camps.map((c) => {
-          const reached = stats.streak >= c.day;
-          return (
-            <div
-              key={c.day}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="font-medium">{c.day} días</div>
-                {reached ? (
-                  <span className="text-sm text-emerald-400">✅ Conquistado</span>
-                ) : (
-                  <span className="text-sm text-slate-300">
-                    Te faltan {c.day - stats.streak}{' '}
-                    {c.day - stats.streak === 1 ? 'día' : 'días'}
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-slate-400">
-                {c.reward ? (
-                  <>🎁 {c.reward}</>
-                ) : (
-                  <span className="text-slate-500">Sin recompensa todavía</span>
-                )}
-              </p>
-            </div>
-          );
-        })}
+      <div className="mt-6 mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-medium text-slate-300">Campamentos</h2>
+        {!editing && (
+          <button
+            onClick={startEdit}
+            className="text-sm text-slate-400 hover:text-slate-200"
+          >
+            Editar
+          </button>
+        )}
       </div>
+
+      {editing ? (
+        <div className="space-y-2">
+          {draft.map((c, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-white/10 bg-white/5 p-3"
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={c.day || ''}
+                  onChange={(e) => updateRow(i, { day: Number(e.target.value) })}
+                  placeholder="días"
+                  className="w-20 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-white/30"
+                />
+                <span className="text-sm text-slate-400">días</span>
+                <button
+                  onClick={() => removeRow(i)}
+                  className="ml-auto text-xs text-slate-500 hover:text-rose-300"
+                >
+                  Quitar
+                </button>
+              </div>
+              <input
+                value={c.reward}
+                onChange={(e) => updateRow(i, { reward: e.target.value })}
+                placeholder="Recompensa al llegar (opcional)"
+                className="mt-2 w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-white/30"
+              />
+            </div>
+          ))}
+
+          <button
+            onClick={addRow}
+            className="w-full rounded-xl border border-dashed border-white/20 px-3 py-2 text-sm text-slate-400 hover:bg-white/5"
+          >
+            + Agregar campamento
+          </button>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={saveCamps}
+              disabled={saving}
+              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-950 hover:bg-slate-200 disabled:opacity-50"
+            >
+              {saving ? 'Guardando…' : 'Guardar'}
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">
+            Los días se ordenan solos y se ignoran los repetidos o vacíos.
+          </p>
+        </div>
+      ) : camps.length === 0 ? (
+        <p className="text-sm text-slate-500">
+          Sin campamentos. Tocá <b>Editar</b> para agregar metas.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {camps.map((c) => {
+            const reached = stats.streak >= c.day;
+            return (
+              <div
+                key={c.day}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-medium">{c.day} días</div>
+                  {reached ? (
+                    <span className="text-sm text-emerald-400">✅ Conquistado</span>
+                  ) : (
+                    <span className="text-sm text-slate-300">
+                      Te faltan {c.day - stats.streak}{' '}
+                      {c.day - stats.streak === 1 ? 'día' : 'días'}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-slate-400">
+                  {c.reward ? (
+                    <>🎁 {c.reward}</>
+                  ) : (
+                    <span className="text-slate-500">Sin recompensa todavía</span>
+                  )}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </PageContainer>
   );
 }

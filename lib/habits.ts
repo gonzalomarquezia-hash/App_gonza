@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { Habit, Checkin, CheckinState, HabitType, HabitStats } from './types';
+import type { Habit, Camp, Checkin, CheckinState, HabitType, HabitStats } from './types';
 
 export const DAY_MS = 86_400_000;
 
@@ -75,6 +75,19 @@ export async function deleteHabit(id: string): Promise<void> {
 export async function setReward(habit: Habit, campDay: number, reward: string): Promise<void> {
   const camps = habit.camps.map((c) => (c.day === campDay ? { ...c, reward } : c));
   const { error } = await supabase.from('habits').update({ camps }).eq('id', habit.id);
+  if (error) throw error;
+}
+
+// Reemplaza TODOS los campamentos del hábito. Sanea: días enteros >= 1, sin
+// duplicados (gana el último), ordenados de menor a mayor.
+export async function setCamps(habitId: string, camps: Camp[]): Promise<void> {
+  const byDay = new Map<number, Camp>();
+  for (const c of camps) {
+    const day = Math.round(Number(c.day));
+    if (Number.isFinite(day) && day >= 1) byDay.set(day, { day, reward: c.reward ?? '' });
+  }
+  const clean = [...byDay.values()].sort((a, b) => a.day - b.day);
+  const { error } = await supabase.from('habits').update({ camps: clean }).eq('id', habitId);
   if (error) throw error;
 }
 
