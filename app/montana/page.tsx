@@ -83,15 +83,40 @@ export default function Montana() {
   const stats = selected ? computeStats(selected, checkins) : null;
   const camps = selected ? [...selected.camps].sort((a, b) => a.day - b.day) : [];
 
-  // Geometría del sendero (de base a cumbre)
+  // Geometría del sendero: polilínea en zigzag de la base a la cumbre.
   const W = 320;
-  const H = 280;
-  const base = { x: 45, y: 240 };
-  const peak = { x: 255, y: 45 };
-  const at = (f: number) => ({
-    x: base.x + (peak.x - base.x) * Math.min(1, Math.max(0, f)),
-    y: base.y + (peak.y - base.y) * Math.min(1, Math.max(0, f)),
+  const H = 270;
+  const peak = { x: 188, y: 46 };
+  // Waypoints del camino (de base a cumbre), zigzagueando por la ladera.
+  const PATH: [number, number][] = [
+    [108, 248],
+    [176, 224],
+    [118, 196],
+    [182, 168],
+    [136, 140],
+    [190, 110],
+    [150, 84],
+    [peak.x, peak.y + 8],
+  ];
+  const segs = PATH.slice(1).map((b, i) => {
+    const a = PATH[i];
+    return { a, b, len: Math.hypot(b[0] - a[0], b[1] - a[1]) };
   });
+  const pathLen = segs.reduce((s, g) => s + g.len, 0);
+  const trail = `M ${PATH.map((p) => p.join(',')).join(' L ')}`;
+  // Punto a la fracción f (0=base, 1=cumbre) a lo largo de la polilínea.
+  const at = (f: number) => {
+    let t = Math.min(1, Math.max(0, f)) * pathLen;
+    for (const g of segs) {
+      if (t <= g.len) {
+        const u = g.len === 0 ? 0 : t / g.len;
+        return { x: g.a[0] + (g.b[0] - g.a[0]) * u, y: g.a[1] + (g.b[1] - g.a[1]) * u };
+      }
+      t -= g.len;
+    }
+    const last = segs[segs.length - 1];
+    return { x: last.b[0], y: last.b[1] };
+  };
 
   return (
     <PageContainer>
@@ -135,61 +160,98 @@ export default function Montana() {
                 <span className="text-slate-500"> · acumulado de por vida {stats.lifetime}</span>
               </p>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
                 <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-                  <polygon points={`8,260 ${peak.x},${peak.y} 312,260`} fill="#1e293b" />
-                  <polygon
-                    points={`${peak.x - 26},${peak.y + 28} ${peak.x},${peak.y} ${peak.x + 26},${peak.y + 28}`}
-                    fill="#475569"
-                  />
-                  <line
-                    x1={base.x}
-                    y1={base.y}
-                    x2={peak.x}
-                    y2={peak.y}
-                    stroke="#64748b"
-                    strokeWidth="2"
-                    strokeDasharray="3 6"
-                    strokeLinecap="round"
+                  <defs>
+                    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="100%" stopColor="#bae6fd" />
+                    </linearGradient>
+                    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1e3a5f" />
+                      <stop offset="100%" stopColor="#0f2740" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* cielo */}
+                  <rect x="0" y="0" width={W} height={H} fill="url(#sky)" />
+
+                  {/* nubes */}
+                  <g fill="#ffffff" opacity="0.9">
+                    <ellipse cx="62" cy="70" rx="26" ry="11" />
+                    <ellipse cx="44" cy="78" rx="18" ry="9" />
+                    <ellipse cx="250" cy="54" rx="30" ry="12" />
+                    <ellipse cx="276" cy="62" rx="18" ry="9" />
+                  </g>
+
+                  {/* cordillera de fondo */}
+                  <path d="M -10,262 L 70,150 L 140,210 L 210,150 L 330,262 Z" fill="#2a4a6b" opacity="0.7" />
+
+                  {/* montaña principal */}
+                  <path
+                    d={`M -10,264 L 60,176 L 110,214 L ${peak.x},${peak.y} L 244,150 L 330,264 Z`}
+                    fill="url(#rock)"
                   />
 
+                  {/* nieve en la cumbre */}
+                  <path
+                    d={`M ${peak.x},${peak.y} L 158,118 L 168,112 L 178,122 L 188,114 L 198,124 L 210,114 L 226,120 Z`}
+                    fill="#f1f5f9"
+                  />
+
+                  {/* sendero en zigzag */}
+                  <path
+                    d={trail}
+                    fill="none"
+                    stroke="#f8fafc"
+                    strokeWidth="2.5"
+                    strokeDasharray="2 7"
+                    strokeLinecap="round"
+                    opacity="0.95"
+                  />
+
+                  {/* campamentos */}
                   {camps.map((c) => {
                     const p = at(c.day / stats.summitDay);
                     const reached = stats.streak >= c.day;
+                    const sel = selCampDay === c.day;
                     return (
                       <g
                         key={c.day}
                         onClick={() => setSelCampDay(c.day)}
                         style={{ cursor: 'pointer' }}
                       >
-                        <circle
-                          cx={p.x}
-                          cy={p.y}
-                          r="11"
-                          fill={reached ? '#10b981' : '#0b1120'}
-                          stroke={selCampDay === c.day ? '#f8fafc' : reached ? '#34d399' : '#64748b'}
-                          strokeWidth={selCampDay === c.day ? 3 : 2}
-                        />
+                        {sel && (
+                          <circle cx={p.x} cy={p.y} r="14" fill="none" stroke="#f8fafc" strokeWidth="2" />
+                        )}
                         <text
                           x={p.x}
-                          y={p.y + 3.5}
+                          y={p.y + 6}
                           textAnchor="middle"
-                          fontSize="9"
-                          fontWeight="bold"
-                          fill={reached ? '#03130d' : '#94a3b8'}
+                          fontSize="19"
+                          opacity={reached ? 1 : 0.85}
                         >
-                          {c.day}
+                          {reached ? '🚩' : '⛺'}
                         </text>
+                        <g transform={`translate(${p.x}, ${p.y + 13})`}>
+                          <rect x="-9" y="0" width="18" height="12" rx="6" fill="#0f172a" opacity="0.85" />
+                          <text x="0" y="9" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#e2e8f0">
+                            {c.day}
+                          </text>
+                        </g>
                       </g>
                     );
                   })}
 
-                  <text x={peak.x} y={peak.y - 12} textAnchor="middle" fontSize="16">
+                  {/* bandera de cumbre */}
+                  <text x={peak.x} y={peak.y - 6} textAnchor="middle" fontSize="18">
                     🏁
                   </text>
+
+                  {/* personaje (vos) */}
                   <text
                     x={at(stats.progress).x}
-                    y={at(stats.progress).y - 13}
+                    y={at(stats.progress).y - 8}
                     textAnchor="middle"
                     fontSize="22"
                     transform={`translate(${2 * at(stats.progress).x} 0) scale(-1 1)`}
