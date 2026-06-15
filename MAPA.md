@@ -108,5 +108,13 @@ Tocar un hábito y entrar a SU pantalla. Las "etapas/fases" = los **campamentos*
 
 > Regla: un paso a la vez. No se abre el Paso 2 hasta que el Paso 1 está vivo.
 
+## 🧭 Fase 3 — Calendario, backfill y métricas (en el detalle del hábito)
+- [x] **Días de la semana** por hábito (columna `week_days`). La racha respeta esos días.
+- [x] **Calendario mensual**: marcar días pasados hecho/descanso/vacío → suma al acumulado y la racha.
+- [x] **Métricas**: % total (cumbre), % del campamento actual, acumulado, hechos vs no hechos.
+- ⚠️ Requiere correr `supabase/schema.sql` (crea `notes` y agrega `week_days`).
+
+**✅ Fase 3 COMPLETA — hábitos con historial real, no solo desde que abrí la app.**
+
 ## 👉 Próximo paso (uno)
-Fase 2 cerrada. Próximo destino sin elegir todavía (estacionamiento: Proyectos, deadlines, etc.).
+Sin elegir. Estacionamiento: Proyectos (GitHub), deadlines + cuenta regresiva, resumen mensual de notas.

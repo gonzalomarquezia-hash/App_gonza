@@ -8,10 +8,13 @@ create table if not exists habits (
   name          text not null,
   type          text not null default 'do' check (type in ('do','avoid')),
   camps         jsonb not null default '[{"day":7,"reward":""},{"day":30,"reward":""},{"day":90,"reward":""}]'::jsonb,
+  week_days     jsonb not null default '[0,1,2,3,4,5,6]'::jsonb,
   base_reset_at timestamptz not null default now(),
   lifetime_days int not null default 0,
   created_at    timestamptz not null default now()
 );
+-- Migración para tablas ya creadas (Fase 3): días de la semana del hábito.
+alter table habits add column if not exists week_days jsonb not null default '[0,1,2,3,4,5,6]'::jsonb;
 
 create table if not exists checkins (
   id         uuid primary key default gen_random_uuid(),

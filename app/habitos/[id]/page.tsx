@@ -7,12 +7,19 @@ import {
   getCheckins,
   computeStats,
   setCamps,
+  setCheckin,
+  clearCheckin,
+  setWeekDays,
+  todayStr,
   getNotes,
   addNote,
   deleteNote,
 } from '@/lib/habits';
-import type { Habit, Camp, Checkin, Note } from '@/lib/types';
+import type { Habit, Camp, Checkin, CheckinState, Note } from '@/lib/types';
 import { PageContainer, ErrorBox } from '@/components/ui';
+import HabitCalendar from '@/components/HabitCalendar';
+
+const DOW_LABELS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
 export default function HabitoDetalle({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -73,6 +80,31 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
     if (!habit) return;
     await deleteNote(noteId);
     await refreshNotes(habit.id);
+  }
+
+  // Calendario: cicla hecho → descanso → vacío para ese día.
+  async function toggleDay(day: string) {
+    if (!habit) return;
+    const current = checkins.find((c) => c.day === day)?.state ?? null;
+    const next: CheckinState | null =
+      current === null ? 'done' : current === 'done' ? 'rest' : null;
+    if (next === null) await clearCheckin(habit.id, day);
+    else await setCheckin(habit.id, day, next);
+    setCheckins(await getCheckins(habit.id));
+  }
+
+  async function toggleWeekDay(d: number) {
+    if (!habit) return;
+    const has = habit.week_days.includes(d);
+    const next = has ? habit.week_days.filter((x) => x !== d) : [...habit.week_days, d];
+    try {
+      await setWeekDays(habit.id, next);
+      await load();
+    } catch {
+      setError(
+        'Falta activar los días de la semana: corré supabase/schema.sql en Supabase (agrega la columna week_days) y recargá.',
+      );
+    }
   }
 
   function startEdit() {
@@ -171,6 +203,54 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
         )}
         <span className="text-slate-500"> · acumulado de por vida {stats.lifetime}</span>
       </p>
+
+      {/* Métricas */}
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Metric label="% total" value={`${stats.pctTotal}%`} hint="hacia la cumbre" />
+        <Metric label={stats.campLabel} value={`${stats.pctCamp}%`} hint="del campamento actual" />
+        <Metric label="Acumulado" value={`${stats.lifetime}`} hint="días de por vida" />
+        {habit.type === 'do' ? (
+          <Metric
+            label="Hechos / No"
+            value={`${stats.doneCount} / ${stats.missCount}`}
+            hint={stats.restCount ? `+${stats.restCount} descanso` : 'hecho vs no hecho'}
+          />
+        ) : (
+          <Metric label="Racha" value={`${stats.streak}`} hint="días sin recaer" />
+        )}
+      </div>
+
+      {habit.type === 'do' && (
+        <>
+          <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Días de la semana</h2>
+          <div className="flex gap-1">
+            {DOW_LABELS.map((lbl, d) => {
+              const on = habit.week_days.includes(d);
+              return (
+                <button
+                  key={d}
+                  onClick={() => toggleWeekDay(d)}
+                  className={`h-9 w-9 rounded-lg text-sm ${
+                    on
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                      : 'border border-white/15 text-slate-500 hover:bg-white/5'
+                  }`}
+                >
+                  {lbl}
+                </button>
+              );
+            })}
+          </div>
+
+          <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Calendario</h2>
+          <HabitCalendar
+            states={new Map(checkins.map((c) => [c.day, c.state]))}
+            weekDays={habit.week_days}
+            today={todayStr()}
+            onToggle={toggleDay}
+          />
+        </>
+      )}
 
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2 className="text-sm font-medium text-slate-300">Campamentos</h2>
@@ -326,5 +406,17 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
         </div>
       )}
     </PageContainer>
+  );
+}
+
+function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="text-lg font-semibold text-slate-100">{value}</div>
+      <div className="truncate text-xs text-slate-300" title={label}>
+        {label}
+      </div>
+      <div className="truncate text-xs text-slate-500">{hint}</div>
+    </div>
   );
 }
