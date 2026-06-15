@@ -90,17 +90,46 @@ export async function setWeekDays(habitId: string, days: number[]): Promise<void
   if (error) throw error;
 }
 
-export async function relapse(habit: Habit): Promise<void> {
-  const { streak } = computeStats(habit, []);
-  const { error } = await supabase
-    .from('habits')
-    .update({ lifetime_days: habit.lifetime_days + streak, base_reset_at: new Date().toISOString() })
-    .eq('id', habit.id);
+export interface HabitSchedule {
+  week_days?: number[];
+  start_time?: string | null;
+  end_time?: string | null;
+  duration_min?: number | null;
+}
+
+function cleanWeekDays(days?: number[]): number[] {
+  const clean = [...new Set(days ?? [])].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
+  return clean.length ? clean : ALL_WEEK_DAYS;
+}
+
+// Normaliza el horario: solo uno de los dos modos (ventana o temporizador) sobrevive.
+function cleanSchedule(s: HabitSchedule) {
+  const start = s.start_time?.trim() || null;
+  const dur = s.duration_min != null && s.duration_min > 0 ? Math.round(s.duration_min) : null;
+  // Si hay temporizador, manda el temporizador; si no, vale la ventana.
+  const end = dur ? null : s.end_time?.trim() || null;
+  return { start_time: start, end_time: end, duration_min: dur };
+}
+
+export async function createHabit(
+  name: string,
+  type: HabitType,
+  sched: HabitSchedule = {},
+): Promise<void> {
+  const { error } = await supabase.from('habits').insert({
+    name,
+    type,
+    week_days: cleanWeekDays(sched.week_days),
+    ...cleanSchedule(sched),
+  });
   if (error) throw error;
 }
 
-export async function createHabit(name: string, type: HabitType): Promise<void> {
-  const { error } = await supabase.from('habits').insert({ name, type });
+export async function setSchedule(habitId: string, sched: HabitSchedule): Promise<void> {
+  const { error } = await supabase
+    .from('habits')
+    .update(cleanSchedule(sched))
+    .eq('id', habitId);
   if (error) throw error;
 }
 
@@ -159,58 +188,44 @@ export function computeStats(habit: Habit, checkins: Checkin[]): HabitStats {
     habit.week_days && habit.week_days.length ? habit.week_days : ALL_WEEK_DAYS,
   );
 
+  // Modelo unificado (Fase 4): "hacer" y "no hacer" usan el mismo calendario.
+  // done = lo cumplí ese día · miss = no lo realicé / caí · descanso = día fuera de semana.
   let streak = 0;
-  let lifetime = 0;
-  let todayState: CheckinState | null = null;
   let doneCount = 0;
-  let restCount = 0;
   let missCount = 0;
 
-  if (habit.type === 'avoid') {
-    const base = new Date(habit.base_reset_at).getTime();
-    streak = Math.max(0, Math.floor((Date.now() - base) / DAY_MS));
-    lifetime = habit.lifetime_days + streak;
-  } else {
-    const states = new Map<string, CheckinState>();
-    for (const c of checkins) {
-      states.set(c.day, c.state);
-      if (c.state === 'done') doneCount++;
-      else restCount++;
-    }
-    lifetime = checkins.length;
+  const states = new Map<string, CheckinState>();
+  for (const c of checkins) {
+    states.set(c.day, c.state);
+    if (c.state === 'done') doneCount++;
+    else missCount++;
+  }
+  const lifetime = doneCount;
 
-    const today = todayStr();
-    todayState = states.get(today) ?? null;
+  const today = todayStr();
+  const todayState: CheckinState | null = states.get(today) ?? null;
 
-    // Racha hacia atrás, respetando los días de la semana del hábito.
-    // Un día no programado se saltea (no cuenta ni rompe). Hoy sin marcar no rompe.
-    let cursor = today;
-    for (let guard = 0; guard < 4000; guard++) {
-      if (!scheduled.has(weekdayOf(cursor))) {
-        cursor = shiftDay(cursor, -1);
-        continue;
-      }
-      if (states.has(cursor)) {
-        streak++;
-        cursor = shiftDay(cursor, -1);
-        continue;
-      }
-      if (cursor === today) {
-        cursor = shiftDay(cursor, -1);
-        continue;
-      }
-      break;
+  // Racha hacia atrás, respetando los días de la semana del hábito.
+  // Día no programado: se saltea (descanso, no cuenta ni rompe).
+  // "no realizado" rompe la racha. Hoy sin marcar no rompe.
+  let cursor = today;
+  for (let guard = 0; guard < 4000; guard++) {
+    if (!scheduled.has(weekdayOf(cursor))) {
+      cursor = shiftDay(cursor, -1);
+      continue;
     }
-
-    // Días no hechos: días programados anteriores a hoy, dentro del historial, sin marcar.
-    const days = checkins.map((c) => c.day).sort();
-    if (days.length) {
-      let d = days[0];
-      for (let guard = 0; guard < 4000 && d < today; guard++) {
-        if (scheduled.has(weekdayOf(d)) && !states.has(d)) missCount++;
-        d = shiftDay(d, 1);
-      }
+    const st = states.get(cursor);
+    if (st === 'done') {
+      streak++;
+      cursor = shiftDay(cursor, -1);
+      continue;
     }
+    if (st === 'miss') break;
+    if (cursor === today) {
+      cursor = shiftDay(cursor, -1);
+      continue;
+    }
+    break;
   }
 
   const nextCamp = camps.find((c) => c.day > streak) ?? null;
@@ -236,7 +251,6 @@ export function computeStats(habit: Habit, checkins: Checkin[]): HabitStats {
     progress,
     todayState,
     doneCount,
-    restCount,
     missCount,
     pctTotal: Math.round(progress * 100),
     pctCamp: Math.round(pctCamp),

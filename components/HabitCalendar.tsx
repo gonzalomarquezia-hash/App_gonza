@@ -80,11 +80,12 @@ export default function HabitCalendar({
             'aspect-square rounded-lg text-xs flex items-center justify-center transition-colors';
           let look = 'text-slate-600';
           if (state === 'done') look = 'bg-emerald-500 text-slate-950 font-semibold';
-          else if (state === 'rest') look = 'bg-sky-500 text-slate-950 font-semibold';
-          else if (!isScheduled) look = 'text-slate-700';
+          else if (state === 'miss') look = 'bg-rose-500 text-slate-950 font-semibold';
+          else if (!isScheduled) look = 'bg-sky-500/20 text-sky-300'; // descanso (definido por la semana)
           else if (isFuture) look = 'text-slate-600';
           else look = 'border border-white/10 text-slate-300';
 
+          // El descanso no se marca a mano: lo definen los días de la semana.
           const disabled = isFuture || !isScheduled;
 
           return (
@@ -104,8 +105,9 @@ export default function HabitCalendar({
 
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
         <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-emerald-500" />Hecho</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-sky-500" />Descanso</span>
-        <span className="text-slate-500">Tocá un día para marcarlo (hecho → descanso → vacío).</span>
+        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-rose-500" />No realizado</span>
+        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-sky-500/40" />Descanso</span>
+        <span className="text-slate-500">Tocá un día: hecho → no realizado → vacío.</span>
       </div>
     </div>
   );

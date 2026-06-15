@@ -36,7 +36,7 @@ export default function Montana() {
   useEffect(() => {
     let cancel = false;
     (async () => {
-      if (!selected || selected.type !== 'do') {
+      if (!selected) {
         setCheckins([]);
         return;
       }

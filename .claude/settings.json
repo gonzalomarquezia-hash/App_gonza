@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import sys,json,time; d=json.load\\(sys.stdin\\)['deployments'][0]; print\\('Estado:', d['state'], '| commit:', d.get\\('meta',{}\\).get\\('githubCommitMessage','?'\\)[:40], '| hace', int\\(\\(time.time\\(\\)*1000-d['created']\\)/1000\\),'s'\\)\")",
+      "Bash(npx next *)"
+    ]
+  }
+}

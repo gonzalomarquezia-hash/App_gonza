@@ -7,10 +7,15 @@ import {
   computeStats,
   setToday,
   clearToday,
-  relapse,
 } from '@/lib/habits';
 import type { Habit, Checkin, CheckinState } from '@/lib/types';
 import { PageContainer, ErrorBox } from '@/components/ui';
+
+// Hoy cae en día de descanso si no está entre los días de la semana del hábito.
+function restToday(h: Habit): boolean {
+  const days = h.week_days?.length ? h.week_days : [0, 1, 2, 3, 4, 5, 6];
+  return !days.includes(new Date().getDay());
+}
 
 export default function Inicio() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -24,11 +29,9 @@ export default function Inicio() {
       const hs = await getHabits();
       const map: Record<string, Checkin[]> = {};
       await Promise.all(
-        hs
-          .filter((h) => h.type === 'do')
-          .map(async (h) => {
-            map[h.id] = await getCheckins(h.id);
-          }),
+        hs.map(async (h) => {
+          map[h.id] = await getCheckins(h.id);
+        }),
       );
       setHabits(hs);
       setCheckins(map);
@@ -47,17 +50,6 @@ export default function Inicio() {
     const current = computeStats(h, checkins[h.id] ?? []).todayState;
     if (current === state) await clearToday(h.id);
     else await setToday(h.id, state);
-    await load();
-  }
-
-  async function doRelapse(h: Habit) {
-    if (
-      !confirm(
-        `¿Recaíste en "${h.name}"? Volvés a la base. Lo que subiste queda guardado en tu acumulado.`,
-      )
-    )
-      return;
-    await relapse(h);
     await load();
   }
 
@@ -101,7 +93,11 @@ export default function Inicio() {
                   </div>
                 </div>
 
-                {h.type === 'do' ? (
+                {restToday(h) ? (
+                  <span className="rounded-xl border border-sky-400/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-300">
+                    Descanso
+                  </span>
+                ) : (
                   <div className="flex gap-2">
                     <button
                       onClick={() => toggle(h, 'done')}
@@ -114,23 +110,16 @@ export default function Inicio() {
                       Hecho
                     </button>
                     <button
-                      onClick={() => toggle(h, 'rest')}
+                      onClick={() => toggle(h, 'miss')}
                       className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                        stats.todayState === 'rest'
-                          ? 'border-sky-400 bg-sky-500 text-slate-950'
+                        stats.todayState === 'miss'
+                          ? 'border-rose-400 bg-rose-500 text-slate-950'
                           : 'border-white/15 text-slate-200 hover:bg-white/10'
                       }`}
                     >
-                      Descanso
+                      No
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => doRelapse(h)}
-                    className="rounded-xl border border-rose-500/40 px-3 py-2 text-sm font-medium text-rose-300 hover:bg-rose-500/10"
-                  >
-                    Recaí
-                  </button>
                 )}
               </div>
             </div>

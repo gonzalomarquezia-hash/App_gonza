@@ -10,6 +10,7 @@ import {
   setCheckin,
   clearCheckin,
   setWeekDays,
+  setSchedule,
   todayStr,
   getNotes,
   addNote,
@@ -35,6 +36,11 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
   const [noteDraft, setNoteDraft] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [notesReady, setNotesReady] = useState(true);
+  const [schedMode, setSchedMode] = useState<'none' | 'window' | 'timer'>('none');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [durationMin, setDurationMin] = useState('');
+  const [savingSched, setSavingSched] = useState(false);
 
   const refreshNotes = useCallback(async (habitId: string) => {
     try {
@@ -53,8 +59,14 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
       const hs = await getHabits();
       const h = hs.find((x) => x.id === id) ?? null;
       setHabit(h);
-      setCheckins(h && h.type === 'do' ? await getCheckins(h.id) : []);
-      if (h) await refreshNotes(h.id);
+      setCheckins(h ? await getCheckins(h.id) : []);
+      if (h) {
+        setStartTime(h.start_time?.slice(0, 5) ?? '');
+        setEndTime(h.end_time?.slice(0, 5) ?? '');
+        setDurationMin(h.duration_min != null ? String(h.duration_min) : '');
+        setSchedMode(h.duration_min != null ? 'timer' : h.start_time || h.end_time ? 'window' : 'none');
+        await refreshNotes(h.id);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
     } finally {
@@ -82,15 +94,32 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
     await refreshNotes(habit.id);
   }
 
-  // Calendario: cicla hecho → descanso → vacío para ese día.
+  // Calendario: cicla hecho → no realizado → vacío para ese día.
   async function toggleDay(day: string) {
     if (!habit) return;
     const current = checkins.find((c) => c.day === day)?.state ?? null;
     const next: CheckinState | null =
-      current === null ? 'done' : current === 'done' ? 'rest' : null;
+      current === null ? 'done' : current === 'done' ? 'miss' : null;
     if (next === null) await clearCheckin(habit.id, day);
     else await setCheckin(habit.id, day, next);
     setCheckins(await getCheckins(habit.id));
+  }
+
+  async function saveSchedule() {
+    if (!habit) return;
+    setSavingSched(true);
+    try {
+      await setSchedule(habit.id, {
+        start_time: schedMode === 'none' ? null : startTime,
+        end_time: schedMode === 'window' ? endTime : null,
+        duration_min: schedMode === 'timer' ? Number(durationMin) : null,
+      });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar el horario');
+    } finally {
+      setSavingSched(false);
+    }
   }
 
   async function toggleWeekDay(d: number) {
@@ -209,48 +238,110 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
         <Metric label="% total" value={`${stats.pctTotal}%`} hint="hacia la cumbre" />
         <Metric label={stats.campLabel} value={`${stats.pctCamp}%`} hint="del campamento actual" />
         <Metric label="Acumulado" value={`${stats.lifetime}`} hint="días de por vida" />
-        {habit.type === 'do' ? (
-          <Metric
-            label="Hechos / No"
-            value={`${stats.doneCount} / ${stats.missCount}`}
-            hint={stats.restCount ? `+${stats.restCount} descanso` : 'hecho vs no hecho'}
-          />
-        ) : (
-          <Metric label="Racha" value={`${stats.streak}`} hint="días sin recaer" />
-        )}
+        <Metric
+          label="Hechos / No"
+          value={`${stats.doneCount} / ${stats.missCount}`}
+          hint="hecho vs no realizado"
+        />
       </div>
 
-      {habit.type === 'do' && (
-        <>
-          <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Días de la semana</h2>
-          <div className="flex gap-1">
-            {DOW_LABELS.map((lbl, d) => {
-              const on = habit.week_days.includes(d);
-              return (
-                <button
-                  key={d}
-                  onClick={() => toggleWeekDay(d)}
-                  className={`h-9 w-9 rounded-lg text-sm ${
-                    on
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
-                      : 'border border-white/15 text-slate-500 hover:bg-white/5'
-                  }`}
-                >
-                  {lbl}
-                </button>
-              );
-            })}
-          </div>
+      <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">
+        Días de la semana <span className="text-slate-500">(los demás son descanso)</span>
+      </h2>
+      <div className="flex gap-1">
+        {DOW_LABELS.map((lbl, d) => {
+          const on = habit.week_days.includes(d);
+          return (
+            <button
+              key={d}
+              onClick={() => toggleWeekDay(d)}
+              className={`h-9 w-9 rounded-lg text-sm ${
+                on
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                  : 'border border-white/15 text-slate-500 hover:bg-white/5'
+              }`}
+            >
+              {lbl}
+            </button>
+          );
+        })}
+      </div>
 
-          <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Calendario</h2>
-          <HabitCalendar
-            states={new Map(checkins.map((c) => [c.day, c.state]))}
-            weekDays={habit.week_days}
-            today={todayStr()}
-            onToggle={toggleDay}
-          />
-        </>
-      )}
+      <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Horario</h2>
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className="flex gap-2">
+          {(['none', 'window', 'timer'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setSchedMode(m)}
+              className={`rounded-xl border px-3 py-2 text-sm ${
+                schedMode === m
+                  ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
+                  : 'border-white/15 text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              {m === 'none' ? 'Sin horario' : m === 'window' ? 'Ventana' : 'Temporizador'}
+            </button>
+          ))}
+        </div>
+
+        {schedMode !== 'none' && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <label className="flex items-center gap-2 text-slate-400">
+              Empieza
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="rounded-xl border border-white/15 bg-transparent px-3 py-2 text-slate-100 outline-none focus:border-white/30"
+              />
+            </label>
+            {schedMode === 'window' ? (
+              <label className="flex items-center gap-2 text-slate-400">
+                Termina
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="rounded-xl border border-white/15 bg-transparent px-3 py-2 text-slate-100 outline-none focus:border-white/30"
+                />
+              </label>
+            ) : (
+              <label className="flex items-center gap-2 text-slate-400">
+                Duración
+                <input
+                  type="number"
+                  min={1}
+                  value={durationMin}
+                  onChange={(e) => setDurationMin(e.target.value)}
+                  placeholder="min"
+                  className="w-24 rounded-xl border border-white/15 bg-transparent px-3 py-2 text-slate-100 outline-none placeholder:text-slate-500 focus:border-white/30"
+                />
+                min
+              </label>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={saveSchedule}
+          disabled={savingSched}
+          className="mt-3 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-950 hover:bg-slate-200 disabled:opacity-50"
+        >
+          {savingSched ? 'Guardando…' : 'Guardar horario'}
+        </button>
+        <p className="mt-2 text-xs text-slate-500">
+          Se usará para el recordatorio (notificación) en una próxima etapa.
+        </p>
+      </div>
+
+      <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Calendario</h2>
+      <HabitCalendar
+        states={new Map(checkins.map((c) => [c.day, c.state]))}
+        weekDays={habit.week_days}
+        today={todayStr()}
+        onToggle={toggleDay}
+      />
 
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2 className="text-sm font-medium text-slate-300">Campamentos</h2>
