@@ -3,6 +3,14 @@ import type { Habit, Camp, Checkin, CheckinState, HabitType, HabitStats, Note } 
 
 export const DAY_MS = 86_400_000;
 
+// Los errores de Supabase son objetos planos ({ message, details, hint, code }),
+// no instancias de Error. Los convertimos a Error real para que el mensaje real
+// (ej. "Could not find the 'start_time' column ... in the schema cache") se vea.
+function asError(e: { message?: string; hint?: string; code?: string }): Error {
+  const parts = [e.message, e.hint].filter(Boolean);
+  return new Error(parts.join(' · ') || `Error de base${e.code ? ` (${e.code})` : ''}`);
+}
+
 export function todayStr(d = new Date()): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -29,7 +37,7 @@ export async function getHabits(): Promise<Habit[]> {
     .from('habits')
     .select('*')
     .order('created_at', { ascending: true });
-  if (error) throw error;
+  if (error) throw asError(error);
   return (data as Habit[]).map((h) => ({
     ...h,
     // Hábitos viejos (antes de la columna) o vacíos → aplican todos los días.
@@ -42,7 +50,7 @@ export async function getCheckins(habitId: string): Promise<Checkin[]> {
     .from('checkins')
     .select('*')
     .eq('habit_id', habitId);
-  if (error) throw error;
+  if (error) throw asError(error);
   return data as Checkin[];
 }
 
@@ -52,7 +60,7 @@ export async function setToday(habitId: string, state: CheckinState): Promise<vo
   const { error } = await supabase
     .from('checkins')
     .upsert({ habit_id: habitId, day: todayStr(), state }, { onConflict: 'habit_id,day' });
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function clearToday(habitId: string): Promise<void> {
@@ -61,7 +69,7 @@ export async function clearToday(habitId: string): Promise<void> {
     .delete()
     .eq('habit_id', habitId)
     .eq('day', todayStr());
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 // Marcar/borrar un día cualquiera (para el calendario / backfill de días pasados).
@@ -69,7 +77,7 @@ export async function setCheckin(habitId: string, day: string, state: CheckinSta
   const { error } = await supabase
     .from('checkins')
     .upsert({ habit_id: habitId, day, state }, { onConflict: 'habit_id,day' });
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function clearCheckin(habitId: string, day: string): Promise<void> {
@@ -78,7 +86,7 @@ export async function clearCheckin(habitId: string, day: string): Promise<void> 
     .delete()
     .eq('habit_id', habitId)
     .eq('day', day);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function setWeekDays(habitId: string, days: number[]): Promise<void> {
@@ -87,7 +95,7 @@ export async function setWeekDays(habitId: string, days: number[]): Promise<void
     .from('habits')
     .update({ week_days: clean.length ? clean : ALL_WEEK_DAYS })
     .eq('id', habitId);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export interface HabitSchedule {
@@ -126,7 +134,7 @@ export async function createHabit(
     week_days: cleanWeekDays(sched.week_days),
     ...cleanSchedule(sched),
   });
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function setSchedule(habitId: string, sched: HabitSchedule): Promise<void> {
@@ -134,18 +142,18 @@ export async function setSchedule(habitId: string, sched: HabitSchedule): Promis
     .from('habits')
     .update(cleanSchedule(sched))
     .eq('id', habitId);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function deleteHabit(id: string): Promise<void> {
   const { error } = await supabase.from('habits').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function setReward(habit: Habit, campDay: number, reward: string): Promise<void> {
   const camps = habit.camps.map((c) => (c.day === campDay ? { ...c, reward } : c));
   const { error } = await supabase.from('habits').update({ camps }).eq('id', habit.id);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 // Reemplaza TODOS los campamentos del hábito. Sanea: días enteros >= 1, sin
@@ -158,7 +166,7 @@ export async function setCamps(habitId: string, camps: Camp[]): Promise<void> {
   }
   const clean = [...byDay.values()].sort((a, b) => a.day - b.day);
   const { error } = await supabase.from('habits').update({ camps: clean }).eq('id', habitId);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 // ---- Notas ----
@@ -169,18 +177,18 @@ export async function getNotes(habitId: string): Promise<Note[]> {
     .select('*')
     .eq('habit_id', habitId)
     .order('created_at', { ascending: false });
-  if (error) throw error;
+  if (error) throw asError(error);
   return data as Note[];
 }
 
 export async function addNote(habitId: string, text: string): Promise<void> {
   const { error } = await supabase.from('notes').insert({ habit_id: habitId, text });
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase.from('notes').delete().eq('id', id);
-  if (error) throw error;
+  if (error) throw asError(error);
 }
 
 // ---- Cálculo ----
