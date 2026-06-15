@@ -118,6 +118,30 @@ export default function Montana() {
     return { x: last.b[0], y: last.b[1] };
   };
 
+  // Reparto VISUAL de campamentos: parejos de base a cumbre por su ORDEN,
+  // no por el día. Así no se amontonan aunque los días estén juntos (7,14,21…).
+  const nCamps = camps.length;
+  const campFrac = (i: number) => (i + 1) / Math.max(1, nCamps);
+  // Día → fracción visual: lineal a trozos entre campamentos, para que el
+  // escalador avance acompañando los marcadores repartidos.
+  const dayToFrac = (day: number) => {
+    const summit = nCamps ? camps[nCamps - 1].day : stats?.summitDay ?? 90;
+    const v = Math.min(Math.max(0, day), summit);
+    let prevDay = 0;
+    let prevFrac = 0;
+    for (let i = 0; i < nCamps; i++) {
+      const d = camps[i].day;
+      const f = campFrac(i);
+      if (v <= d) {
+        const u = d === prevDay ? 0 : (v - prevDay) / (d - prevDay);
+        return prevFrac + (f - prevFrac) * u;
+      }
+      prevDay = d;
+      prevFrac = f;
+    }
+    return summit > 0 ? Math.min(1, v / summit) : 0;
+  };
+
   return (
     <PageContainer>
       <h1 className="text-2xl font-semibold">Montaña</h1>
@@ -210,11 +234,13 @@ export default function Montana() {
                     opacity="0.95"
                   />
 
-                  {/* campamentos */}
-                  {camps.map((c) => {
-                    const p = at(c.day / stats.summitDay);
+                  {/* campamentos: 🚩 pendiente · 🏅 logro alcanzado */}
+                  {camps.map((c, i) => {
+                    const p = at(campFrac(i));
                     const reached = stats.streak >= c.day;
                     const sel = selCampDay === c.day;
+                    // El número va al lado contrario del escalador para no chocar.
+                    const badgeX = p.x < W / 2 ? 13 : -13;
                     return (
                       <g
                         key={c.day}
@@ -222,20 +248,20 @@ export default function Montana() {
                         style={{ cursor: 'pointer' }}
                       >
                         {sel && (
-                          <circle cx={p.x} cy={p.y} r="14" fill="none" stroke="#f8fafc" strokeWidth="2" />
+                          <circle cx={p.x} cy={p.y} r="15" fill="none" stroke="#f8fafc" strokeWidth="2" />
                         )}
                         <text
                           x={p.x}
                           y={p.y + 6}
                           textAnchor="middle"
-                          fontSize="19"
-                          opacity={reached ? 1 : 0.85}
+                          fontSize="18"
+                          opacity={reached ? 1 : 0.9}
                         >
-                          {reached ? '🚩' : '⛺'}
+                          {reached ? '🏅' : '🚩'}
                         </text>
-                        <g transform={`translate(${p.x}, ${p.y + 13})`}>
-                          <rect x="-9" y="0" width="18" height="12" rx="6" fill="#0f172a" opacity="0.85" />
-                          <text x="0" y="9" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#e2e8f0">
+                        <g transform={`translate(${p.x + badgeX}, ${p.y - 7})`}>
+                          <rect x="-10" y="0" width="20" height="13" rx="6.5" fill="#0f172a" opacity="0.85" />
+                          <text x="0" y="10" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#e2e8f0">
                             {c.day}
                           </text>
                         </g>
@@ -248,16 +274,21 @@ export default function Montana() {
                     🏁
                   </text>
 
-                  {/* personaje (vos) */}
-                  <text
-                    x={at(stats.progress).x}
-                    y={at(stats.progress).y - 8}
-                    textAnchor="middle"
-                    fontSize="22"
-                    transform={`translate(${2 * at(stats.progress).x} 0) scale(-1 1)`}
-                  >
-                    🧗
-                  </text>
+                  {/* personaje (vos) — caminando ladera arriba */}
+                  {(() => {
+                    const me = at(dayToFrac(stats.streak));
+                    return (
+                      <text
+                        x={me.x}
+                        y={me.y - 9}
+                        textAnchor="middle"
+                        fontSize="20"
+                        transform={`translate(${2 * me.x} 0) scale(-1 1)`}
+                      >
+                        🚶
+                      </text>
+                    );
+                  })()}
                 </svg>
               </div>
 
