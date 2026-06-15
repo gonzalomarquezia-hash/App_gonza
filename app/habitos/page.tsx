@@ -45,20 +45,25 @@ export default function Habitos() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    await createHabit(name.trim(), type, {
-      week_days: weekDays,
-      start_time: schedMode === 'none' ? null : startTime,
-      end_time: schedMode === 'window' ? endTime : null,
-      duration_min: schedMode === 'timer' ? Number(durationMin) : null,
-    });
-    setName('');
-    setType('do');
-    setWeekDays(ALL_DAYS);
-    setSchedMode('none');
-    setStartTime('');
-    setEndTime('');
-    setDurationMin('');
-    await load();
+    try {
+      setError(null);
+      await createHabit(name.trim(), type, {
+        week_days: weekDays,
+        start_time: schedMode === 'none' ? null : startTime,
+        end_time: schedMode === 'window' ? endTime : null,
+        duration_min: schedMode === 'timer' ? Number(durationMin) : null,
+      });
+      setName('');
+      setType('do');
+      setWeekDays(ALL_DAYS);
+      setSchedMode('none');
+      setStartTime('');
+      setEndTime('');
+      setDurationMin('');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al crear el hábito');
+    }
   }
 
   async function del(h: Habit) {
