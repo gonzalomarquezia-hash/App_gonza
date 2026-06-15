@@ -103,12 +103,16 @@ function cleanWeekDays(days?: number[]): number[] {
 }
 
 // Normaliza el horario: solo uno de los dos modos (ventana o temporizador) sobrevive.
-function cleanSchedule(s: HabitSchedule) {
-  const start = s.start_time?.trim() || null;
+// Solo incluye campos que tengan valor — no manda nulls explícitos a Supabase.
+function cleanSchedule(s: HabitSchedule): Record<string, string | number> {
+  const result: Record<string, string | number> = {};
+  const start = s.start_time?.trim();
   const dur = s.duration_min != null && s.duration_min > 0 ? Math.round(s.duration_min) : null;
-  // Si hay temporizador, manda el temporizador; si no, vale la ventana.
-  const end = dur ? null : s.end_time?.trim() || null;
-  return { start_time: start, end_time: end, duration_min: dur };
+  const end = !dur ? s.end_time?.trim() : undefined;
+  if (start) result.start_time = start;
+  if (end) result.end_time = end;
+  if (dur) result.duration_min = dur;
+  return result;
 }
 
 export async function createHabit(
