@@ -83,63 +83,52 @@ export default function Montana() {
   const stats = selected ? computeStats(selected, checkins) : null;
   const camps = selected ? [...selected.camps].sort((a, b) => a.day - b.day) : [];
 
-  // Geometría del sendero: polilínea en zigzag de la base a la cumbre.
+  // Geometría del sendero: zigzag CALCULADO sobre la cara de la montaña.
   const W = 320;
   const H = 270;
   const peak = { x: 188, y: 46 };
-  // Waypoints del camino (de base a cumbre), zigzagueando por la ladera.
-  const PATH: [number, number][] = [
-    [108, 248],
-    [176, 224],
-    [118, 196],
-    [182, 168],
-    [136, 140],
-    [190, 110],
-    [150, 84],
-    [peak.x, peak.y + 8],
-  ];
-  const segs = PATH.slice(1).map((b, i) => {
-    const a = PATH[i];
-    return { a, b, len: Math.hypot(b[0] - a[0], b[1] - a[1]) };
-  });
-  const pathLen = segs.reduce((s, g) => s + g.len, 0);
-  const trail = `M ${PATH.map((p) => p.join(',')).join(' L ')}`;
-  // Punto a la fracción f (0=base, 1=cumbre) a lo largo de la polilínea.
-  const at = (f: number) => {
-    let t = Math.min(1, Math.max(0, f)) * pathLen;
-    for (const g of segs) {
-      if (t <= g.len) {
-        const u = g.len === 0 ? 0 : t / g.len;
-        return { x: g.a[0] + (g.b[0] - g.a[0]) * u, y: g.a[1] + (g.b[1] - g.a[1]) * u };
-      }
-      t -= g.len;
-    }
-    const last = segs[segs.length - 1];
-    return { x: last.b[0], y: last.b[1] };
-  };
 
-  // Reparto VISUAL de campamentos: parejos de base a cumbre por su ORDEN,
-  // no por el día. Así no se amontonan aunque los días estén juntos (7,14,21…).
+  // "Cara" de la montaña (triángulo que apoya sobre la roca, con margen):
+  // a cada altura t (0=base, 1=cumbre) el sendero vive entre su borde izq/der.
   const nCamps = camps.length;
-  const campFrac = (i: number) => (i + 1) / Math.max(1, nCamps);
-  // Día → fracción visual: lineal a trozos entre campamentos, para que el
-  // escalador avance acompañando los marcadores repartidos.
-  const dayToFrac = (day: number) => {
-    const summit = nCamps ? camps[nCamps - 1].day : stats?.summitDay ?? 90;
-    const v = Math.min(Math.max(0, day), summit);
-    let prevDay = 0;
-    let prevFrac = 0;
-    for (let i = 0; i < nCamps; i++) {
-      const d = camps[i].day;
-      const f = campFrac(i);
-      if (v <= d) {
-        const u = d === prevDay ? 0 : (v - prevDay) / (d - prevDay);
-        return prevFrac + (f - prevFrac) * u;
+  const apexX = peak.x;
+  const apexY = 60; // un poco bajo la punta real, para que la cima respire
+  const baseY = 252;
+  const baseL = 90;
+  const baseR = 252;
+  const edge = (t: number, ex: number) => ex + (apexX - ex) * t;
+  const centerAt = (t: number) => (edge(t, baseL) + edge(t, baseR)) / 2;
+  const halfAt = (t: number) => (edge(t, baseR) - edge(t, baseL)) / 2;
+  const yAt = (t: number) => baseY + (apexY - baseY) * t;
+  const SWING = 0.78; // cuánto del ancho disponible barre el zigzag
+
+  // Nodos del sendero: arranque en la base + un nodo por campamento,
+  // alternando lados → switchbacks. El último (cumbre) queda centrado.
+  const trailhead = { x: centerAt(0), y: yAt(0) };
+  const campPt = (i: number) => {
+    const t = (i + 1) / Math.max(1, nCamps);
+    const side = i % 2 === 0 ? 1 : -1; // primer campamento hacia la derecha
+    return { x: centerAt(t) + side * halfAt(t) * SWING, y: yAt(t) };
+  };
+  const nodes = [trailhead, ...camps.map((_, i) => campPt(i))];
+  const trail = `M ${nodes.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}`;
+
+  // Día → punto sobre el sendero (lineal a trozos entre nodos, por días).
+  const dayDays = [0, ...camps.map((c) => c.day)];
+  const posForDay = (day: number) => {
+    const maxD = dayDays[dayDays.length - 1] || 1;
+    const v = Math.min(Math.max(0, day), maxD);
+    for (let i = 1; i < dayDays.length; i++) {
+      if (v <= dayDays[i]) {
+        const d0 = dayDays[i - 1];
+        const d1 = dayDays[i];
+        const u = d1 === d0 ? 0 : (v - d0) / (d1 - d0);
+        const a = nodes[i - 1];
+        const b = nodes[i];
+        return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u };
       }
-      prevDay = d;
-      prevFrac = f;
     }
-    return summit > 0 ? Math.min(1, v / summit) : 0;
+    return nodes[nodes.length - 1];
   };
 
   return (
@@ -234,13 +223,19 @@ export default function Montana() {
                     opacity="0.95"
                   />
 
+                  {/* punto de partida (campamento base) */}
+                  <circle cx={trailhead.x} cy={trailhead.y} r="3.5" fill="#f8fafc" />
+                  <text x={trailhead.x} y={trailhead.y - 7} textAnchor="middle" fontSize="15">
+                    🏕️
+                  </text>
+
                   {/* campamentos: 🚩 pendiente · 🏅 logro alcanzado */}
                   {camps.map((c, i) => {
-                    const p = at(campFrac(i));
+                    const p = campPt(i);
                     const reached = stats.streak >= c.day;
                     const sel = selCampDay === c.day;
-                    // El número va al lado contrario del escalador para no chocar.
-                    const badgeX = p.x < W / 2 ? 13 : -13;
+                    // El número va al lado contrario del barrido para no chocar con la línea.
+                    const badgeX = p.x <= centerAt((i + 1) / Math.max(1, nCamps)) ? -13 : 13;
                     return (
                       <g
                         key={c.day}
@@ -276,7 +271,7 @@ export default function Montana() {
 
                   {/* personaje (vos) — caminando ladera arriba */}
                   {(() => {
-                    const me = at(dayToFrac(stats.streak));
+                    const me = posForDay(stats.streak);
                     return (
                       <text
                         x={me.x}
