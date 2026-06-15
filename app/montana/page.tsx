@@ -192,6 +192,7 @@ export default function Montana() {
                     y={at(stats.progress).y - 13}
                     textAnchor="middle"
                     fontSize="22"
+                    transform={`translate(${2 * at(stats.progress).x} 0) scale(-1 1)`}
                   >
                     🧗
                   </text>

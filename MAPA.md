@@ -73,9 +73,11 @@ Objetivo: verla andando en la tablet en **días**, fea pero viva. Primer campame
 - [x] Inicio: check-in de hoy (Hecho/Descanso para HACER; "Recaí" para NO HACER).
 - [x] Recaída realista (NO HACER vuelve a base; lo subido pasa al acumulado).
 - [x] Número acumulado que nunca baja, visible.
-- [ ] Gate simple de acceso (que no sea público; auth real va después).
-- [ ] Correr `supabase/schema.sql` en Supabase.
-- [ ] Deploy en Vercel (importar repo + setear las 2 variables NEXT_PUBLIC).
+- [x] Gate simple de acceso (1 contraseña vía `proxy.ts` + `/entrar`; auth real va después).
+- [x] Correr `supabase/schema.sql` en Supabase.
+- [x] Deploy en Vercel (importar repo + setear las 2 variables NEXT_PUBLIC).
+
+**✅ Fase 1 COMPLETA — MVP vivo y privado en Vercel.**
 
 ---
 
@@ -92,4 +94,5 @@ Objetivo: verla andando en la tablet en **días**, fea pero viva. Primer campame
 ---
 
 ## 👉 Próximo paso (uno)
-Levantar el **esqueleto navegable** (panel lateral + Montaña con un hábito de ejemplo) y dejarlo andando. Después conectar Supabase.
+Fase 1 cerrada. Elegir UN destino de la lista del estacionamiento para la Fase 2
+(recomendado: empezar por lo más usado a diario, no por lo más ambicioso).
