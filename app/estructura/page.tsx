@@ -215,6 +215,23 @@ export default function Estructura() {
     await setBlockDayEdit(active.id, day, r.type, r.id, { start_override: newStart });
     await load();
   }
+  async function setBlockTime(b: TimedBlock, hhmm: string) {
+    if (!active || !hhmm) return;
+    const r = refOf(b);
+    const base = minToTime(Math.max(0, timeToMin(hhmm) - dayState.offset_min));
+    await setBlockDayEdit(active.id, day, r.type, r.id, { start_override: base });
+    await load();
+  }
+  async function startBlockNow(b: TimedBlock) {
+    if (!active) return;
+    if (!confirm(`¿Empezás "${b.name}" ahora?`)) return;
+    const d2 = new Date();
+    const nowM = Math.floor((d2.getHours() * 60 + d2.getMinutes()) / 5) * 5;
+    const r = refOf(b);
+    const base = minToTime(Math.max(0, nowM - dayState.offset_min));
+    await setBlockDayEdit(active.id, day, r.type, r.id, { start_override: base });
+    await load();
+  }
   async function setBlockDuration(b: TimedBlock, minutes: number) {
     if (!active) return;
     const r = refOf(b);
@@ -506,7 +523,9 @@ export default function Estructura() {
               itemsByBlock={itemsByBlock}
               onToggleDone={toggleDone}
               onPostpone={postponeBlock}
+              onSetTime={setBlockTime}
               onSetDuration={setBlockDuration}
+              onStartNow={startBlockNow}
               onSkip={skipBlock}
               onRestore={(b) => restoreRef(refOf(b).type, refOf(b).id)}
               onDelete={removeBlock}

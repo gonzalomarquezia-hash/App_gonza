@@ -1,9 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Mountain, Coffee, Check, Plus, MoreHorizontal, Trash2, RotateCcw } from 'lucide-react';
+import {
+  Mountain,
+  Coffee,
+  Check,
+  Plus,
+  MoreHorizontal,
+  Trash2,
+  RotateCcw,
+  ChevronUp,
+  ChevronDown,
+  Play,
+} from 'lucide-react';
 import type { TimedBlock, BlockItemView } from '@/lib/types';
-import { minToClock, fmtHuman } from '@/lib/estructura';
+import { minToClock, minToTime, fmtHuman } from '@/lib/estructura';
 
 type Row = { kind: 'block'; block: TimedBlock } | { kind: 'gap'; startMin: number; endMin: number };
 
@@ -14,7 +25,9 @@ export default function Agenda({
   itemsByBlock,
   onToggleDone,
   onPostpone,
+  onSetTime,
   onSetDuration,
+  onStartNow,
   onSkip,
   onRestore,
   onDelete,
@@ -26,7 +39,9 @@ export default function Agenda({
   itemsByBlock: Record<string, BlockItemView[]>;
   onToggleDone: (b: TimedBlock) => void;
   onPostpone: (b: TimedBlock, minutes: number) => void;
+  onSetTime: (b: TimedBlock, hhmm: string) => void;
   onSetDuration: (b: TimedBlock, minutes: number) => void;
+  onStartNow: (b: TimedBlock) => void;
   onSkip: (b: TimedBlock) => void;
   onRestore: (b: TimedBlock) => void;
   onDelete: (b: TimedBlock) => void;
@@ -61,7 +76,9 @@ export default function Agenda({
             onOpen={() => setOpenId((id) => (id === row.block.id ? null : row.block.id))}
             onToggleDone={onToggleDone}
             onPostpone={onPostpone}
+            onSetTime={onSetTime}
             onSetDuration={onSetDuration}
+            onStartNow={onStartNow}
             onSkip={onSkip}
             onRestore={onRestore}
             onDelete={onDelete}
@@ -107,7 +124,9 @@ function BlockRow({
   onOpen,
   onToggleDone,
   onPostpone,
+  onSetTime,
   onSetDuration,
+  onStartNow,
   onSkip,
   onRestore,
   onDelete,
@@ -119,12 +138,15 @@ function BlockRow({
   onOpen: () => void;
   onToggleDone: (b: TimedBlock) => void;
   onPostpone: (b: TimedBlock, minutes: number) => void;
+  onSetTime: (b: TimedBlock, hhmm: string) => void;
   onSetDuration: (b: TimedBlock, minutes: number) => void;
+  onStartNow: (b: TimedBlock) => void;
   onSkip: (b: TimedBlock) => void;
   onRestore: (b: TimedBlock) => void;
   onDelete: (b: TimedBlock) => void;
 }) {
   const [dur, setDur] = useState(String(b.duration_min));
+  const timeVal = minToTime(b.startMin % 1440);
   const doneItems = items.filter((it) => it.done).length;
 
   return (
@@ -191,32 +213,61 @@ function BlockRow({
       </div>
 
       {open && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-2.5 text-xs">
-          <span className="text-slate-500">Mover:</span>
-          {[-15, 15, 30].map((m) => (
-            <button
-              key={m}
-              onClick={() => onPostpone(b, m)}
-              className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
-            >
-              {m > 0 ? `+${m}` : m}m
-            </button>
-          ))}
-          <span className="ml-2 text-slate-500">Dura:</span>
-          <input
-            value={dur}
-            onChange={(e) => setDur(e.target.value)}
-            inputMode="numeric"
-            className="w-14 rounded-lg border border-white/15 bg-white/5 px-2 py-1 outline-none focus:border-sky-400/50"
-          />
-          <button
-            onClick={() => onSetDuration(b, Number(dur) || b.duration_min)}
-            className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
-          >
-            ok
-          </button>
+        <div className="border-t border-white/10 px-3 py-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* mover ±10 min con flechas */}
+            <div className="flex overflow-hidden rounded-lg border border-white/15">
+              <button
+                onClick={() => onPostpone(b, -10)}
+                aria-label="Más temprano (10 min)"
+                className="px-2 py-1 text-slate-200 hover:bg-white/10"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => onPostpone(b, 10)}
+                aria-label="Más tarde (10 min)"
+                className="border-l border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
 
-          <div className="ml-auto flex items-center gap-2">
+            {/* editar hora (no-controlado: se refresca cuando cambia la hora del bloque) */}
+            <input
+              key={timeVal}
+              type="time"
+              defaultValue={timeVal}
+              onBlur={(e) => e.target.value && e.target.value !== timeVal && onSetTime(b, e.target.value)}
+              className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-slate-100 outline-none focus:border-sky-400/50"
+            />
+
+            {/* duración */}
+            <span className="flex items-center gap-1">
+              <input
+                value={dur}
+                onChange={(e) => setDur(e.target.value)}
+                inputMode="numeric"
+                className="w-12 rounded-lg border border-white/15 bg-white/5 px-2 py-1 outline-none focus:border-sky-400/50"
+              />
+              <span className="text-slate-500">min</span>
+              <button
+                onClick={() => onSetDuration(b, Number(dur) || b.duration_min)}
+                className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
+              >
+                ok
+              </button>
+            </span>
+
+            <button
+              onClick={() => onStartNow(b)}
+              className="flex items-center gap-1 rounded-lg border border-sky-400/40 bg-sky-500/10 px-2 py-1 font-medium text-sky-200 hover:bg-sky-500/20"
+            >
+              <Play className="h-3.5 w-3.5" /> empezar ahora
+            </button>
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
             {b.edited && (
               <button
                 onClick={() => onRestore(b)}
@@ -235,7 +286,7 @@ function BlockRow({
               <button
                 onClick={() => onDelete(b)}
                 aria-label="Borrar bloque"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-500/10 hover:text-rose-400"
+                className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-500/10 hover:text-rose-400"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
