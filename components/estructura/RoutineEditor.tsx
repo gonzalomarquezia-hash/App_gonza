@@ -35,27 +35,38 @@ export default function RoutineEditor({
 }) {
   const [newName, setNewName] = useState('');
   const [newContext, setNewContext] = useState('casa');
+  const [err, setErr] = useState<string | null>(null);
 
   async function addBlock() {
     if (!routine) return;
     // Arranca después del último bloque para que caiga ordenado.
     const last = blocks[blocks.length - 1];
     const start = last ? addMinutes(last.start_time, last.duration_min) : '08:00';
-    await createBlock(routine.id, {
-      name: 'Nuevo bloque',
-      start_time: start,
-      duration_min: 30,
-      pos: blocks.length,
-    });
-    onChange();
+    try {
+      setErr(null);
+      await createBlock(routine.id, {
+        name: 'Nuevo bloque',
+        start_time: start,
+        duration_min: 30,
+        pos: blocks.length,
+      });
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'No se pudo agregar el bloque');
+    }
   }
 
   async function addRoutine() {
     const name = newName.trim();
     if (!name) return;
-    await createRoutine(name, newContext);
-    setNewName('');
-    onChange();
+    try {
+      setErr(null);
+      await createRoutine(name, newContext);
+      setNewName('');
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'No se pudo crear la rutina');
+    }
   }
 
   // Sin rutina: solo el alta de la primera.
@@ -91,6 +102,7 @@ export default function RoutineEditor({
             Crear
           </button>
         </div>
+        {err && <p className="mt-3 break-words text-sm text-rose-300">{err}</p>}
       </div>
     );
   }
@@ -125,6 +137,8 @@ export default function RoutineEditor({
       >
         + Agregar bloque
       </button>
+
+      {err && <p className="mt-3 break-words text-sm text-rose-300">{err}</p>}
 
       {/* Crear otra rutina (contexto) */}
       <div className="mt-6 border-t border-white/10 pt-4">

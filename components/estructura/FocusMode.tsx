@@ -5,9 +5,11 @@ import type { ActiveBlockInfo, BlockItemView, Idea } from '@/lib/types';
 import { fmtDuration, minToClock } from '@/lib/estructura';
 import IdeaCapture from './IdeaCapture';
 import Checklist from './Checklist';
+import FlipClock from './FlipClock';
 
-// Pantalla completa de foco: fondo negro, reloj enorme, círculo que se vacía con
-// el tiempo del bloque, y captura de idea siempre a mano.
+// Pantalla completa de foco: fondo negro, reloj flip enorme, barra de progreso
+// fina, y el bloque + tareas + captura de idea a mano. Se abre con el botón,
+// nunca de golpe.
 export default function FocusMode({
   info,
   mode,
@@ -26,7 +28,7 @@ export default function FocusMode({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [showNote, setShowNote] = useState(false);
+  const [showExtras, setShowExtras] = useState(false);
 
   // Pide pantalla completa real al abrir (si el navegador deja). Si falla, igual
   // sirve como overlay fijo. Sale del fullscreen al cerrar.
@@ -49,92 +51,76 @@ export default function FocusMode({
 
   const { current, next } = info;
   const secs = mode === 'up' ? info.elapsedSec : info.remainingSec;
-
-  // Círculo de progreso.
-  const R = 140;
-  const C = 2 * Math.PI * R;
-  const dash = C * (1 - info.progress);
+  const label = mode === 'up' ? 'transcurrido' : current ? 'restante' : 'para el próximo';
 
   return (
     <div
       ref={ref}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6 text-slate-100"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black px-6 text-slate-100"
     >
       <button
         onClick={onClose}
-        className="absolute right-5 top-5 rounded-xl border border-white/15 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+        aria-label="Salir"
+        className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg text-slate-300 hover:bg-white/10"
       >
-        Salir ✕
+        ✕
       </button>
 
-      <div className="relative flex items-center justify-center">
-        <svg viewBox="0 0 320 320" className="h-[min(70vw,420px)] w-[min(70vw,420px)]">
-          <circle cx="160" cy="160" r={R} fill="none" stroke="#1e293b" strokeWidth="12" />
-          {current && (
-            <circle
-              cx="160"
-              cy="160"
-              r={R}
-              fill="none"
-              stroke="#38bdf8"
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeDasharray={C}
-              strokeDashoffset={dash}
-              transform="rotate(-90 160 160)"
-              style={{ transition: 'stroke-dashoffset 0.9s linear' }}
-            />
-          )}
-        </svg>
+      {/* Reloj flip — tocá para cambiar transcurrido/restante */}
+      <button onClick={onToggleMode} className="block" aria-label="Cambiar modo del reloj">
+        <FlipClock value={fmtDuration(secs)} />
+      </button>
 
-        <div className="absolute flex flex-col items-center">
-          <button onClick={onToggleMode} className="font-mono text-6xl font-semibold tabular-nums md:text-7xl">
-            {fmtDuration(secs)}
-          </button>
-          <span className="mt-1 text-xs uppercase tracking-widest text-slate-500">
-            {mode === 'up' ? 'transcurrido' : current ? 'restante' : 'para el próximo'} · tocá para cambiar
-          </span>
+      {/* Barra de progreso fina del bloque */}
+      {current && (
+        <div className="h-1.5 w-[min(82vw,640px)] overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-sky-400 transition-[width] duration-1000 ease-linear"
+            style={{ width: `${Math.round(info.progress * 100)}%` }}
+          />
         </div>
-      </div>
+      )}
 
-      <div className="mt-8 text-center">
+      {/* Bloque actual */}
+      <div className="text-center">
         {current ? (
-          <>
-            <div className="text-2xl font-semibold">{current.name}</div>
-            {current.description && (
-              <div className="mt-1 text-sm text-slate-400">{current.description}</div>
-            )}
-          </>
+          <div className="text-xl font-semibold md:text-2xl">{current.name}</div>
         ) : (
-          <div className="text-2xl font-semibold text-slate-400">Sin bloque ahora</div>
+          <div className="text-xl font-semibold text-slate-400 md:text-2xl">Sin bloque ahora</div>
         )}
+        <div className="mt-1 text-xs uppercase tracking-widest text-slate-500">
+          {label} · tocá el reloj para cambiar
+        </div>
         {next && (
-          <div className="mt-2 text-sm text-slate-500">
+          <div className="mt-1 text-sm text-slate-500">
             Después: {next.name} · {minToClock(next.startMin)}
           </div>
         )}
       </div>
 
-      {current && items.length > 0 && (
-        <div className="mt-6 w-full max-w-md text-left">
-          <Checklist items={items} blockId={current.id} onChange={onChange} />
-        </div>
-      )}
-
-      <div className="mt-8 w-full max-w-md">
-        {showNote ? (
-          <IdeaCapture
-            ideas={ideas}
-            blockId={current?.id ?? null}
-            onChange={onChange}
-            compact
-          />
+      {/* Tareas + idea (plegable, para no romper el minimalismo) */}
+      <div className="w-full max-w-md">
+        {showExtras ? (
+          <div className="space-y-4">
+            {current && items.length > 0 && (
+              <div className="text-left">
+                <Checklist items={items} blockId={current.id} onChange={onChange} />
+              </div>
+            )}
+            <IdeaCapture ideas={ideas} blockId={current?.id ?? null} onChange={onChange} compact />
+            <button
+              onClick={() => setShowExtras(false)}
+              className="mx-auto block text-xs text-slate-500 hover:text-slate-300"
+            >
+              ocultar
+            </button>
+          </div>
         ) : (
           <button
-            onClick={() => setShowNote(true)}
+            onClick={() => setShowExtras(true)}
             className="mx-auto block rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-white/10"
           >
-            💭 Anotar una idea
+            ✓ Tareas y 💭 idea
           </button>
         )}
       </div>
