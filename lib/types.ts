@@ -36,6 +36,55 @@ export interface Checkin {
   state: CheckinState;
 }
 
+// ── Estructura ──────────────────────────────────────────────
+
+export type BlockKind = 'task' | 'habit' | 'break';
+
+export interface Routine {
+  id: string;
+  name: string;
+  context: string; // 'casa' | 'local'
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Block {
+  id: string;
+  routine_id: string;
+  name: string;
+  description: string | null;
+  start_time: string; // "HH:MM"
+  duration_min: number;
+  pos: number;
+  habit_id: string | null;
+  kind: BlockKind;
+  created_at: string;
+}
+
+export interface Idea {
+  id: string;
+  text: string;
+  day: string; // YYYY-MM-DD
+  block_id: string | null;
+  done: boolean;
+  created_at: string;
+}
+
+// Bloque resuelto a horario real (calculado con el offset del día, no persistido).
+export interface TimedBlock extends Block {
+  startMin: number; // minutos desde medianoche (inicio, con offset)
+  endMin: number; // minutos desde medianoche (fin)
+  done: boolean;
+}
+
+export interface ActiveBlockInfo {
+  current: TimedBlock | null;
+  next: TimedBlock | null;
+  elapsedSec: number; // transcurrido del bloque actual
+  remainingSec: number; // restante del actual; si no hay actual, hasta el próximo
+  progress: number; // 0..1 consumido del bloque actual
+}
+
 export interface HabitStats {
   streak: number;
   lifetime: number;

@@ -6,7 +6,7 @@ export const DAY_MS = 86_400_000;
 // Los errores de Supabase son objetos planos ({ message, details, hint, code }),
 // no instancias de Error. Los convertimos a Error real para que el mensaje real
 // (ej. "Could not find the 'start_time' column ... in the schema cache") se vea.
-function asError(e: { message?: string; hint?: string; code?: string }): Error {
+export function asError(e: { message?: string; hint?: string; code?: string }): Error {
   const parts = [e.message, e.hint].filter(Boolean);
   return new Error(parts.join(' · ') || `Error de base${e.code ? ` (${e.code})` : ''}`);
 }

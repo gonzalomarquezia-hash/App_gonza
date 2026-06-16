@@ -7,6 +7,7 @@ const items = [
   { href: '/', label: 'Inicio', icon: '🏠' },
   { href: '/montana', label: 'Montaña', icon: '🏔️' },
   { href: '/habitos', label: 'Hábitos', icon: '✅' },
+  { href: '/estructura', label: 'Estructura', icon: '🧭' },
 ];
 
 const soon = [

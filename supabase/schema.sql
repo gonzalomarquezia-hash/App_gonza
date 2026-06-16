@@ -71,3 +71,87 @@ grant all on table notes    to anon, authenticated;
 insert into habits (name, type)
 select 'Ejercicio diario', 'do'
 where not exists (select 1 from habits);
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║  Estructura — bloques de trabajo con timer (Fase 5)        ║
+-- ╚══════════════════════════════════════════════════════════╝
+
+-- Rutina = plan de bloques para un contexto. is_active = la que se muestra hoy.
+create table if not exists routines (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,                 -- "Casa", "Local"
+  context     text not null default 'casa',  -- 'casa' | 'local' (libre)
+  is_active   boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+-- Bloque con HORA FIJA. fin = start_time + duration_min (no se guarda el fin).
+create table if not exists blocks (
+  id            uuid primary key default gen_random_uuid(),
+  routine_id    uuid not null references routines(id) on delete cascade,
+  name          text not null,
+  description   text,
+  start_time    time not null default '08:00',
+  duration_min  int  not null default 30,
+  pos           int  not null default 0,        -- desempate / orden visual
+  habit_id      uuid references habits(id) on delete set null,
+  kind          text not null default 'task' check (kind in ('task','habit','break')),
+  created_at    timestamptz not null default now()
+);
+create index if not exists blocks_routine_idx on blocks (routine_id, start_time);
+
+-- Corrimiento del día (aplazar todo). Una fila por (rutina, día). Se resetea solo mañana.
+create table if not exists routine_day_state (
+  id          uuid primary key default gen_random_uuid(),
+  routine_id  uuid not null references routines(id) on delete cascade,
+  day         date not null default current_date,
+  offset_min  int  not null default 0,
+  created_at  timestamptz not null default now(),
+  unique (routine_id, day)
+);
+
+-- "Hecho" de un bloque por día. unique(block_id, day) como checkins.
+create table if not exists block_log (
+  id         uuid primary key default gen_random_uuid(),
+  block_id   uuid not null references blocks(id) on delete cascade,
+  day        date not null default current_date,
+  done       boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (block_id, day)
+);
+
+-- Ideas capturadas (el "ya lo guardé"). Tabla general (la tabla notes exige habit_id
+-- NOT NULL, no sirve). Pensada para alimentar la futura pestaña "Pensamientos".
+create table if not exists ideas (
+  id          uuid primary key default gen_random_uuid(),
+  text        text not null,
+  day         date not null default current_date,
+  block_id    uuid references blocks(id) on delete set null,
+  done        boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+create index if not exists ideas_created_idx on ideas (created_at desc);
+
+alter table routines          disable row level security;
+alter table blocks            disable row level security;
+alter table routine_day_state disable row level security;
+alter table block_log         disable row level security;
+alter table ideas             disable row level security;
+grant all on table routines          to anon, authenticated;
+grant all on table blocks            to anon, authenticated;
+grant all on table routine_day_state to anon, authenticated;
+grant all on table block_log         to anon, authenticated;
+grant all on table ideas             to anon, authenticated;
+
+-- Semilla: una rutina "Casa" + bloques de ejemplo (solo si no hay rutinas).
+insert into routines (name, context, is_active)
+select 'Casa', 'casa', true where not exists (select 1 from routines);
+
+insert into blocks (routine_id, name, description, start_time, duration_min, pos, kind)
+select r.id, x.name, x.descr, x.st::time, x.dur, x.pos, 'task'
+from routines r,
+  (values ('Estudiar','Bloque de foco','08:00',90,0),
+          ('Bañarme','Pausa','09:30',30,1),
+          ('Ocio','Descanso','10:00',60,2),
+          ('Cocinar','Almuerzo','11:00',45,3)) as x(name, descr, st, dur, pos)
+where r.is_active and not exists (select 1 from blocks);
