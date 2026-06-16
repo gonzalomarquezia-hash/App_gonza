@@ -208,11 +208,32 @@ export default function Estructura() {
     }
     await load();
   }
-  async function postponeBlock(b: TimedBlock, minutes: number) {
+  // Reordenar: intercambia el bloque con su vecino respetando duraciones (el que
+  // sube toma el slot del de arriba, el otro arranca cuando este termina).
+  async function reorderBlock(b: TimedBlock, dir: -1 | 1) {
     if (!active) return;
-    const r = refOf(b);
-    const newStart = minToTime(Math.max(0, timeToMin(b.start_time) + minutes));
-    await setBlockDayEdit(active.id, day, r.type, r.id, { start_override: newStart });
+    const i = timed.findIndex((x) => x.id === b.id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= timed.length) return;
+    const other = timed[j];
+    let bStart: number;
+    let oStart: number;
+    if (dir < 0) {
+      bStart = other.startMin;
+      oStart = other.startMin + b.duration_min;
+    } else {
+      oStart = b.startMin;
+      bStart = b.startMin + other.duration_min;
+    }
+    const off = dayState.offset_min;
+    const rB = refOf(b);
+    const rO = refOf(other);
+    await setBlockDayEdit(active.id, day, rB.type, rB.id, {
+      start_override: minToTime(Math.max(0, bStart - off)),
+    });
+    await setBlockDayEdit(active.id, day, rO.type, rO.id, {
+      start_override: minToTime(Math.max(0, oStart - off)),
+    });
     await load();
   }
   async function setBlockTime(b: TimedBlock, hhmm: string) {
@@ -522,7 +543,7 @@ export default function Estructura() {
               currentId={current?.id ?? null}
               itemsByBlock={itemsByBlock}
               onToggleDone={toggleDone}
-              onPostpone={postponeBlock}
+              onReorder={reorderBlock}
               onSetTime={setBlockTime}
               onSetDuration={setBlockDuration}
               onStartNow={startBlockNow}

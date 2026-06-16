@@ -24,7 +24,7 @@ export default function Agenda({
   currentId,
   itemsByBlock,
   onToggleDone,
-  onPostpone,
+  onReorder,
   onSetTime,
   onSetDuration,
   onStartNow,
@@ -38,7 +38,7 @@ export default function Agenda({
   currentId: string | null;
   itemsByBlock: Record<string, BlockItemView[]>;
   onToggleDone: (b: TimedBlock) => void;
-  onPostpone: (b: TimedBlock, minutes: number) => void;
+  onReorder: (b: TimedBlock, dir: -1 | 1) => void;
   onSetTime: (b: TimedBlock, hhmm: string) => void;
   onSetDuration: (b: TimedBlock, minutes: number) => void;
   onStartNow: (b: TimedBlock) => void;
@@ -48,11 +48,16 @@ export default function Agenda({
   onFillGap: (startMin: number) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const idx = new Map(blocks.map((b, i) => [b.id, i]));
 
   const rows: Row[] = [
     ...blocks.map((b): Row => ({ kind: 'block', block: b })),
     ...gaps.map((g): Row => ({ kind: 'gap', startMin: g.startMin, endMin: g.endMin })),
-  ].sort((a, b) => (a.kind === 'block' ? a.block.startMin : a.startMin) - (b.kind === 'block' ? b.block.startMin : b.startMin));
+  ].sort(
+    (a, b) =>
+      (a.kind === 'block' ? a.block.startMin : a.startMin) -
+      (b.kind === 'block' ? b.block.startMin : b.startMin),
+  );
 
   if (rows.length === 0)
     return (
@@ -72,10 +77,12 @@ export default function Agenda({
             b={row.block}
             active={row.block.id === currentId}
             items={itemsByBlock[row.block.id] ?? []}
+            canUp={(idx.get(row.block.id) ?? 0) > 0}
+            canDown={(idx.get(row.block.id) ?? 0) < blocks.length - 1}
             open={openId === row.block.id}
             onOpen={() => setOpenId((id) => (id === row.block.id ? null : row.block.id))}
             onToggleDone={onToggleDone}
-            onPostpone={onPostpone}
+            onReorder={onReorder}
             onSetTime={onSetTime}
             onSetDuration={onSetDuration}
             onStartNow={onStartNow}
@@ -120,10 +127,12 @@ function BlockRow({
   b,
   active,
   items,
+  canUp,
+  canDown,
   open,
   onOpen,
   onToggleDone,
-  onPostpone,
+  onReorder,
   onSetTime,
   onSetDuration,
   onStartNow,
@@ -134,10 +143,12 @@ function BlockRow({
   b: TimedBlock;
   active: boolean;
   items: BlockItemView[];
+  canUp: boolean;
+  canDown: boolean;
   open: boolean;
   onOpen: () => void;
   onToggleDone: (b: TimedBlock) => void;
-  onPostpone: (b: TimedBlock, minutes: number) => void;
+  onReorder: (b: TimedBlock, dir: -1 | 1) => void;
   onSetTime: (b: TimedBlock, hhmm: string) => void;
   onSetDuration: (b: TimedBlock, minutes: number) => void;
   onStartNow: (b: TimedBlock) => void;
@@ -159,7 +170,7 @@ function BlockRow({
             : 'border-white/10 bg-white/5'
       }`}
     >
-      <div className="flex items-center gap-3 p-3">
+      <div className="flex items-center gap-2 p-3">
         <button
           onClick={() => onToggleDone(b)}
           aria-label={b.done ? 'Marcar pendiente' : 'Marcar hecho'}
@@ -203,9 +214,29 @@ function BlockRow({
           {b.duration_min}m
         </span>
 
+        {/* reordenar: subir / bajar de lugar */}
+        <div className="flex shrink-0 flex-col">
+          <button
+            onClick={() => onReorder(b, -1)}
+            disabled={!canUp}
+            aria-label="Subir de lugar"
+            className="text-slate-500 hover:text-slate-200 disabled:opacity-20"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onReorder(b, 1)}
+            disabled={!canDown}
+            aria-label="Bajar de lugar"
+            className="text-slate-500 hover:text-slate-200 disabled:opacity-20"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
+
         <button
           onClick={onOpen}
-          aria-label="Acciones"
+          aria-label="Editar"
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-white/10 hover:text-slate-200"
         >
           <MoreHorizontal className="h-4 w-4" />
@@ -215,50 +246,34 @@ function BlockRow({
       {open && (
         <div className="border-t border-white/10 px-3 py-2.5 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            {/* mover ±10 min con flechas */}
-            <div className="flex overflow-hidden rounded-lg border border-white/15">
-              <button
-                onClick={() => onPostpone(b, -10)}
-                aria-label="Más temprano (10 min)"
-                className="px-2 py-1 text-slate-200 hover:bg-white/10"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => onPostpone(b, 10)}
-                aria-label="Más tarde (10 min)"
-                className="border-l border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* editar hora (no-controlado: se refresca cuando cambia la hora del bloque) */}
-            <input
-              key={timeVal}
-              type="time"
-              defaultValue={timeVal}
-              onBlur={(e) => e.target.value && e.target.value !== timeVal && onSetTime(b, e.target.value)}
-              className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-slate-100 outline-none focus:border-sky-400/50"
-            />
-
-            {/* duración */}
-            <span className="flex items-center gap-1">
+            <label className="flex items-center gap-1 text-slate-500">
+              hora
+              <input
+                key={timeVal}
+                type="time"
+                defaultValue={timeVal}
+                onBlur={(e) =>
+                  e.target.value && e.target.value !== timeVal && onSetTime(b, e.target.value)
+                }
+                className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-slate-100 outline-none focus:border-sky-400/50"
+              />
+            </label>
+            <label className="flex items-center gap-1 text-slate-500">
+              dura
               <input
                 value={dur}
                 onChange={(e) => setDur(e.target.value)}
                 inputMode="numeric"
                 className="w-12 rounded-lg border border-white/15 bg-white/5 px-2 py-1 outline-none focus:border-sky-400/50"
               />
-              <span className="text-slate-500">min</span>
+              min
               <button
                 onClick={() => onSetDuration(b, Number(dur) || b.duration_min)}
                 className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
               >
                 ok
               </button>
-            </span>
-
+            </label>
             <button
               onClick={() => onStartNow(b)}
               className="flex items-center gap-1 rounded-lg border border-sky-400/40 bg-sky-500/10 px-2 py-1 font-medium text-sky-200 hover:bg-sky-500/20"
