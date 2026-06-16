@@ -1,6 +1,16 @@
 import { supabase } from './supabaseClient';
-import { asError, todayStr, setToday, clearToday } from './habits';
-import type { Routine, Block, BlockItem, Idea, TimedBlock, ActiveBlockInfo } from './types';
+import { asError, todayStr, setToday, clearToday, ALL_WEEK_DAYS } from './habits';
+import type {
+  Routine,
+  Block,
+  BlockItem,
+  Habit,
+  HabitSchedule,
+  CheckinState,
+  Idea,
+  TimedBlock,
+  ActiveBlockInfo,
+} from './types';
 
 // ── Matemática de horarios (pura, sin React) ────────────────
 
@@ -40,6 +50,57 @@ export function layoutBlocks(blocks: Block[], offsetMin: number, doneIds: string
       return { ...b, startMin, endMin: startMin + b.duration_min, done: done.has(b.id) };
     })
     .sort((a, b) => a.startMin - b.startMin || a.pos - b.pos);
+}
+
+// Proyecta los hábitos con horario como bloques virtuales del día.
+// Para cada hábito "do" que aplica hoy: usa el horario de la rutina activa si
+// existe (override por contexto), si no, el horario global del hábito (fallback).
+export function projectHabitBlocks(
+  habits: Habit[],
+  scheduleByHabit: Map<string, HabitSchedule>,
+  todayStates: Record<string, CheckinState>,
+  offsetMin: number,
+  todayWeekday: number,
+): TimedBlock[] {
+  const out: TimedBlock[] = [];
+  for (const h of habits) {
+    if (h.type !== 'do') continue;
+    const days = h.week_days?.length ? h.week_days : ALL_WEEK_DAYS;
+    if (!days.includes(todayWeekday)) continue;
+
+    let startTime: string | null = null;
+    let duration = 30;
+    const ov = scheduleByHabit.get(h.id);
+    if (ov) {
+      startTime = ov.start_time;
+      duration = ov.duration_min;
+    } else if (h.start_time) {
+      startTime = h.start_time.slice(0, 5);
+      if (h.duration_min) duration = h.duration_min;
+      else if (h.end_time)
+        duration = Math.max(1, timeToMin(h.end_time) - timeToMin(h.start_time));
+    }
+    if (!startTime) continue; // hábito sin horario → no se proyecta
+
+    const startMin = timeToMin(startTime) + offsetMin;
+    out.push({
+      id: `h:${h.id}`,
+      routine_id: '',
+      name: h.name,
+      description: null,
+      start_time: startTime,
+      duration_min: duration,
+      pos: 0,
+      habit_id: h.id,
+      kind: 'habit',
+      created_at: '',
+      startMin,
+      endMin: startMin + duration,
+      done: todayStates[h.id] === 'done',
+      virtual: true,
+    });
+  }
+  return out;
 }
 
 // Dado el layout y el "ahora", calcula bloque actual/siguiente y los contadores.
@@ -232,6 +293,65 @@ export async function resetDayOffset(routineId: string, day = todayStr()): Promi
     .from('routine_day_state')
     .upsert({ routine_id: routineId, day, offset_min: 0 }, { onConflict: 'routine_id,day' });
   if (error) throw asError(error);
+}
+
+// ── Horarios de hábito por contexto/rutina ──────────────────
+
+export async function getHabitSchedules(routineId: string): Promise<HabitSchedule[]> {
+  const { data, error } = await supabase
+    .from('habit_schedules')
+    .select('*')
+    .eq('routine_id', routineId);
+  if (error) throw asError(error);
+  return (data as HabitSchedule[]).map((s) => ({ ...s, start_time: hhmm(s.start_time) }));
+}
+
+export async function getHabitSchedulesForHabit(habitId: string): Promise<HabitSchedule[]> {
+  const { data, error } = await supabase
+    .from('habit_schedules')
+    .select('*')
+    .eq('habit_id', habitId);
+  if (error) throw asError(error);
+  return (data as HabitSchedule[]).map((s) => ({ ...s, start_time: hhmm(s.start_time) }));
+}
+
+export async function setHabitSchedule(
+  habitId: string,
+  routineId: string,
+  startTime: string,
+  durationMin: number,
+): Promise<void> {
+  const { error } = await supabase.from('habit_schedules').upsert(
+    {
+      habit_id: habitId,
+      routine_id: routineId,
+      start_time: startTime,
+      duration_min: durationMin > 0 ? Math.round(durationMin) : 30,
+    },
+    { onConflict: 'habit_id,routine_id' },
+  );
+  if (error) throw asError(error);
+}
+
+export async function clearHabitSchedule(habitId: string, routineId: string): Promise<void> {
+  const { error } = await supabase
+    .from('habit_schedules')
+    .delete()
+    .eq('habit_id', habitId)
+    .eq('routine_id', routineId);
+  if (error) throw asError(error);
+}
+
+// Estado de hoy de cada hábito (para saber si el bloque proyectado va tildado).
+export async function getTodayHabitStates(): Promise<Record<string, CheckinState>> {
+  const { data, error } = await supabase
+    .from('checkins')
+    .select('habit_id,state')
+    .eq('day', todayStr());
+  if (error) throw asError(error);
+  const map: Record<string, CheckinState> = {};
+  for (const c of data as { habit_id: string; state: CheckinState }[]) map[c.habit_id] = c.state;
+  return map;
 }
 
 // ── Checklist (mini-tareas del bloque) ──────────────────────

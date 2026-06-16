@@ -84,11 +84,22 @@ export interface BlockItemView extends BlockItem {
   done: boolean;
 }
 
+// Horario de un hábito en una rutina concreta (alimenta la proyección).
+export interface HabitSchedule {
+  id: string;
+  habit_id: string;
+  routine_id: string;
+  start_time: string; // "HH:MM"
+  duration_min: number;
+  created_at: string;
+}
+
 // Bloque resuelto a horario real (calculado con el offset del día, no persistido).
 export interface TimedBlock extends Block {
   startMin: number; // minutos desde medianoche (inicio, con offset)
   endMin: number; // minutos desde medianoche (fin)
   done: boolean;
+  virtual?: boolean; // true = proyectado desde un hábito (no es una fila de blocks)
 }
 
 export interface ActiveBlockInfo {

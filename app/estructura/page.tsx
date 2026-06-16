@@ -8,6 +8,8 @@ import type {
   BlockItemView,
   Idea,
   Habit,
+  HabitSchedule,
+  CheckinState,
   TimedBlock,
 } from '@/lib/types';
 import {
@@ -18,10 +20,13 @@ import {
   getBlockItems,
   getDoneItemIds,
   getIdeas,
+  getHabitSchedules,
+  getTodayHabitStates,
   setActiveRoutine,
   createBlock,
   deleteBlock,
   layoutBlocks,
+  projectHabitBlocks,
   computeActive,
   minToClock,
   minToTime,
@@ -49,6 +54,8 @@ export default function Estructura() {
   const [doneItemIds, setDoneItemIds] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [schedules, setSchedules] = useState<HabitSchedule[]>([]);
+  const [todayStates, setTodayStates] = useState<Record<string, CheckinState>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,20 +76,26 @@ export default function Estructura() {
       setIdeas(await getIdeas());
       if (active) {
         const bs = await getBlocks(active.id);
-        const [off, done, its, doneIts] = await Promise.all([
+        const [off, done, its, doneIts, scheds, states] = await Promise.all([
           getDayOffset(active.id),
           getDoneBlockIds(),
           getBlockItems(bs.map((b) => b.id)),
           getDoneItemIds(),
+          getHabitSchedules(active.id),
+          getTodayHabitStates(),
         ]);
         setBlocks(bs);
         setOffset(off);
         setDoneIds(done);
         setItems(its);
         setDoneItemIds(doneIts);
+        setSchedules(scheds);
+        setTodayStates(states);
       } else {
         setBlocks([]);
         setItems([]);
+        setSchedules([]);
+        setTodayStates({});
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
@@ -97,7 +110,19 @@ export default function Estructura() {
 
   const active = routines.find((r) => r.is_active) ?? routines[0] ?? null;
 
-  const timed = useMemo(() => layoutBlocks(blocks, offset, doneIds), [blocks, offset, doneIds]);
+  // Bloques reales (de la rutina) + hábitos proyectados, ordenados por hora.
+  const timed = useMemo(() => {
+    const real = layoutBlocks(blocks, offset, doneIds);
+    const scheduleByHabit = new Map(schedules.map((s) => [s.habit_id, s]));
+    const virtuals = projectHabitBlocks(
+      habits,
+      scheduleByHabit,
+      todayStates,
+      offset,
+      new Date(now).getDay(),
+    );
+    return [...real, ...virtuals].sort((a, b) => a.startMin - b.startMin || a.pos - b.pos);
+  }, [blocks, offset, doneIds, habits, schedules, todayStates, now]);
   const info = useMemo(() => computeActive(timed, new Date(now)), [timed, now]);
 
   // Ítems agrupados por bloque, con su estado de tildado del día.

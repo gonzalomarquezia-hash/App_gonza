@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { TimedBlock, BlockItemView } from '@/lib/types';
 import { minToClock, setBlockDone } from '@/lib/estructura';
+import { setToday, clearToday } from '@/lib/habits';
 
 const KIND_ICON: Record<string, string> = { task: '📌', habit: '🏔️', break: '☕️' };
 
@@ -24,7 +25,13 @@ export default function Timeline({
   async function toggle(b: TimedBlock) {
     setBusy(b.id);
     try {
-      await setBlockDone(b, !b.done);
+      if (b.virtual && b.habit_id) {
+        // Bloque proyectado de un hábito: la marca va al hábito (sincronía).
+        if (b.done) await clearToday(b.habit_id);
+        else await setToday(b.habit_id, 'done');
+      } else {
+        await setBlockDone(b, !b.done);
+      }
       onChange();
     } finally {
       setBusy(null);
@@ -92,13 +99,22 @@ export default function Timeline({
               <div>{b.duration_min}m</div>
             </div>
 
-            <button
-              onClick={() => onDelete(b)}
-              aria-label="Eliminar bloque"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-rose-500/10 hover:text-rose-400"
-            >
-              ✕
-            </button>
+            {b.virtual ? (
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center text-xs text-slate-600"
+                title="Bloque de un hábito (se edita en Hábitos)"
+              >
+                🏔️
+              </span>
+            ) : (
+              <button
+                onClick={() => onDelete(b)}
+                aria-label="Eliminar bloque"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-rose-500/10 hover:text-rose-400"
+              >
+                ✕
+              </button>
+            )}
           </div>
         );
       })}

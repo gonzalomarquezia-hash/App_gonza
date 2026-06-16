@@ -19,6 +19,7 @@ import {
 import type { Habit, Camp, Checkin, CheckinState, Note } from '@/lib/types';
 import { PageContainer, ErrorBox } from '@/components/ui';
 import HabitCalendar from '@/components/HabitCalendar';
+import HabitContextSchedules from '@/components/estructura/HabitContextSchedules';
 
 const DOW_LABELS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
@@ -334,6 +335,11 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
           Se usará para el recordatorio (notificación) en una próxima etapa.
         </p>
       </div>
+
+      <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">
+        🧭 En tu estructura <span className="text-slate-500">(horario por contexto)</span>
+      </h2>
+      <HabitContextSchedules habitId={habit.id} />
 
       <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Calendario</h2>
       <HabitCalendar

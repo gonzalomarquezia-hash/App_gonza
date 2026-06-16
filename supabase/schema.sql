@@ -180,3 +180,19 @@ alter table block_items    disable row level security;
 alter table block_item_log disable row level security;
 grant all on table block_items    to anon, authenticated;
 grant all on table block_item_log to anon, authenticated;
+
+-- Horario de un hábito POR contexto/rutina. Alimenta la proyección: un hábito
+-- con horario en una rutina aparece como bloque del día en esa rutina.
+create table if not exists habit_schedules (
+  id           uuid primary key default gen_random_uuid(),
+  habit_id     uuid not null references habits(id) on delete cascade,
+  routine_id   uuid not null references routines(id) on delete cascade,
+  start_time   time not null,
+  duration_min int  not null default 30,
+  created_at   timestamptz not null default now(),
+  unique (habit_id, routine_id)
+);
+create index if not exists habit_schedules_routine_idx on habit_schedules (routine_id);
+
+alter table habit_schedules disable row level security;
+grant all on table habit_schedules to anon, authenticated;
