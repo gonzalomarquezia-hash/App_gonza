@@ -70,6 +70,20 @@ export interface Idea {
   created_at: string;
 }
 
+// Mini-tarea (checklist) de un bloque. Plantilla recurrente; el tildado es por día.
+export interface BlockItem {
+  id: string;
+  block_id: string;
+  text: string;
+  pos: number;
+  created_at: string;
+}
+
+// Ítem resuelto con su estado del día (no persistido en la fila del ítem).
+export interface BlockItemView extends BlockItem {
+  done: boolean;
+}
+
 // Bloque resuelto a horario real (calculado con el offset del día, no persistido).
 export interface TimedBlock extends Block {
   startMin: number; // minutos desde medianoche (inicio, con offset)

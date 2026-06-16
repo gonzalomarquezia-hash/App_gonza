@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { asError, todayStr, setToday, clearToday } from './habits';
-import type { Routine, Block, Idea, TimedBlock, ActiveBlockInfo } from './types';
+import type { Routine, Block, BlockItem, Idea, TimedBlock, ActiveBlockInfo } from './types';
 
 // ── Matemática de horarios (pura, sin React) ────────────────
 
@@ -232,6 +232,68 @@ export async function resetDayOffset(routineId: string, day = todayStr()): Promi
     .from('routine_day_state')
     .upsert({ routine_id: routineId, day, offset_min: 0 }, { onConflict: 'routine_id,day' });
   if (error) throw asError(error);
+}
+
+// ── Checklist (mini-tareas del bloque) ──────────────────────
+
+// Ítems de varios bloques de una. Devuelve la plantilla (sin estado de tildado).
+export async function getBlockItems(blockIds: string[]): Promise<BlockItem[]> {
+  if (blockIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('block_items')
+    .select('*')
+    .in('block_id', blockIds)
+    .order('pos', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) throw asError(error);
+  return data as BlockItem[];
+}
+
+export async function getDoneItemIds(day = todayStr()): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('block_item_log')
+    .select('item_id')
+    .eq('day', day)
+    .eq('done', true);
+  if (error) throw asError(error);
+  return (data as { item_id: string }[]).map((r) => r.item_id);
+}
+
+export async function createBlockItem(blockId: string, text: string, pos = 0): Promise<void> {
+  const t = text.trim();
+  if (!t) return;
+  const { error } = await supabase.from('block_items').insert({ block_id: blockId, text: t, pos });
+  if (error) throw asError(error);
+}
+
+export async function updateBlockItem(id: string, text: string): Promise<void> {
+  const { error } = await supabase
+    .from('block_items')
+    .update({ text: text.trim() || '—' })
+    .eq('id', id);
+  if (error) throw asError(error);
+}
+
+export async function deleteBlockItem(id: string): Promise<void> {
+  const { error } = await supabase.from('block_items').delete().eq('id', id);
+  if (error) throw asError(error);
+}
+
+// Tildar/destildar una mini-tarea para hoy.
+export async function setItemDone(itemId: string, done: boolean): Promise<void> {
+  if (done) {
+    const { error } = await supabase
+      .from('block_item_log')
+      .upsert({ item_id: itemId, day: todayStr(), done: true }, { onConflict: 'item_id,day' });
+    if (error) throw asError(error);
+  } else {
+    const { error } = await supabase
+      .from('block_item_log')
+      .delete()
+      .eq('item_id', itemId)
+      .eq('day', todayStr());
+    if (error) throw asError(error);
+  }
 }
 
 // ── Ideas ───────────────────────────────────────────────────

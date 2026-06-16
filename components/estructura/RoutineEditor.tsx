@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Block, BlockKind, Routine, Habit } from '@/lib/types';
+import type { Block, BlockItemView, BlockKind, Routine, Habit } from '@/lib/types';
 import {
   createBlock,
   updateBlock,
@@ -10,6 +10,7 @@ import {
   renameRoutine,
   deleteRoutine,
 } from '@/lib/estructura';
+import Checklist from './Checklist';
 
 const KINDS: { value: BlockKind; label: string }[] = [
   { value: 'task', label: '📌 Tarea' },
@@ -21,12 +22,14 @@ export default function RoutineEditor({
   routine,
   routines,
   blocks,
+  itemsByBlock,
   habits,
   onChange,
 }: {
-  routine: Routine;
+  routine: Routine | null;
   routines: Routine[];
   blocks: Block[];
+  itemsByBlock: Record<string, BlockItemView[]>;
   habits: Habit[];
   onChange: () => void;
 }) {
@@ -34,6 +37,7 @@ export default function RoutineEditor({
   const [newContext, setNewContext] = useState('casa');
 
   async function addBlock() {
+    if (!routine) return;
     // Arranca después del último bloque para que caiga ordenado.
     const last = blocks[blocks.length - 1];
     const start = last ? addMinutes(last.start_time, last.duration_min) : '08:00';
@@ -54,6 +58,43 @@ export default function RoutineEditor({
     onChange();
   }
 
+  // Sin rutina: solo el alta de la primera.
+  if (!routine) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+        <p className="mb-1 text-slate-200">Todavía no tenés ninguna rutina.</p>
+        <p className="mb-4 text-sm text-slate-400">
+          Creá una (ej: Casa o Local) y después le agregás los bloques del día.
+        </p>
+        <div className="mx-auto flex max-w-sm flex-wrap items-center gap-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addRoutine()}
+            placeholder="Ej: Casa"
+            className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-sky-400/50"
+          />
+          <select
+            value={newContext}
+            onChange={(e) => setNewContext(e.target.value)}
+            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
+          >
+            <option value="casa">🏠 Casa</option>
+            <option value="local">🏪 Local</option>
+            <option value="otro">📍 Otro</option>
+          </select>
+          <button
+            onClick={addRoutine}
+            disabled={!newName.trim()}
+            className="rounded-xl border border-sky-400/40 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
+          >
+            Crear
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
       <h2 className="mb-1 text-lg font-semibold">Configurar</h2>
@@ -68,7 +109,13 @@ export default function RoutineEditor({
       {/* Bloques */}
       <div className="mt-4 space-y-3">
         {blocks.map((b) => (
-          <BlockRow key={b.id} block={b} habits={habits} onChange={onChange} />
+          <BlockRow
+            key={b.id}
+            block={b}
+            items={itemsByBlock[b.id] ?? []}
+            habits={habits}
+            onChange={onChange}
+          />
         ))}
       </div>
 
@@ -170,10 +217,12 @@ function RoutineHeader({
 
 function BlockRow({
   block,
+  items,
   habits,
   onChange,
 }: {
   block: Block;
+  items: BlockItemView[];
   habits: Habit[];
   onChange: () => void;
 }) {
@@ -262,6 +311,14 @@ function BlockRow({
         placeholder="Descripción (qué hago en este bloque)"
         className="mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
       />
+
+      {/* Checklist plantilla del bloque (se repite cada día) */}
+      <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-2">
+        <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          Mini-tareas (se repiten cada día)
+        </div>
+        <Checklist items={items} blockId={block.id} onChange={onChange} showChecks={false} />
+      </div>
 
       <div className="mt-2 flex items-center justify-end gap-2">
         <button

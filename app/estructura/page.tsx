@@ -1,12 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Routine, Block, Idea, Habit } from '@/lib/types';
+import type { Routine, Block, BlockItem, BlockItemView, Idea, Habit } from '@/lib/types';
 import {
   getRoutines,
   getBlocks,
   getDayOffset,
   getDoneBlockIds,
+  getBlockItems,
+  getDoneItemIds,
   getIdeas,
   setActiveRoutine,
   layoutBlocks,
@@ -18,6 +20,7 @@ import { useNow } from '@/lib/useNow';
 import { PageContainer, ErrorBox } from '@/components/ui';
 import BigTimer from '@/components/estructura/BigTimer';
 import Timeline from '@/components/estructura/Timeline';
+import Checklist from '@/components/estructura/Checklist';
 import IdeaCapture from '@/components/estructura/IdeaCapture';
 import PostponeBar from '@/components/estructura/PostponeBar';
 import RoutineEditor from '@/components/estructura/RoutineEditor';
@@ -30,6 +33,8 @@ export default function Estructura() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [offset, setOffset] = useState(0);
   const [doneIds, setDoneIds] = useState<string[]>([]);
+  const [items, setItems] = useState<BlockItem[]>([]);
+  const [doneItemIds, setDoneItemIds] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,23 +52,25 @@ export default function Estructura() {
       const rs = await getRoutines();
       setRoutines(rs);
       const active = rs.find((r) => r.is_active) ?? rs[0] ?? null;
+      const hs = await getHabits();
+      setHabits(hs);
+      setIdeas(await getIdeas());
       if (active) {
-        const [bs, off, done, ids, hs] = await Promise.all([
-          getBlocks(active.id),
+        const bs = await getBlocks(active.id);
+        const [off, done, its, doneIts] = await Promise.all([
           getDayOffset(active.id),
           getDoneBlockIds(),
-          getIdeas(),
-          getHabits(),
+          getBlockItems(bs.map((b) => b.id)),
+          getDoneItemIds(),
         ]);
         setBlocks(bs);
         setOffset(off);
         setDoneIds(done);
-        setIdeas(ids);
-        setHabits(hs);
+        setItems(its);
+        setDoneItemIds(doneIts);
       } else {
         setBlocks([]);
-        setIdeas(await getIdeas());
-        setHabits(await getHabits());
+        setItems([]);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
@@ -78,11 +85,18 @@ export default function Estructura() {
 
   const active = routines.find((r) => r.is_active) ?? routines[0] ?? null;
 
-  const timed = useMemo(
-    () => layoutBlocks(blocks, offset, doneIds),
-    [blocks, offset, doneIds],
-  );
+  const timed = useMemo(() => layoutBlocks(blocks, offset, doneIds), [blocks, offset, doneIds]);
   const info = useMemo(() => computeActive(timed, new Date(now)), [timed, now]);
+
+  // Ítems agrupados por bloque, con su estado de tildado del día.
+  const itemsByBlock = useMemo(() => {
+    const doneSet = new Set(doneItemIds);
+    const map: Record<string, BlockItemView[]> = {};
+    for (const it of items) {
+      (map[it.block_id] ??= []).push({ ...it, done: doneSet.has(it.id) });
+    }
+    return map;
+  }, [items, doneItemIds]);
 
   async function switchRoutine(id: string) {
     if (id === active?.id) return;
@@ -105,6 +119,7 @@ export default function Estructura() {
     );
 
   const { current, next } = info;
+  const currentItems = current ? (itemsByBlock[current.id] ?? []) : [];
 
   return (
     <PageContainer>
@@ -113,12 +128,14 @@ export default function Estructura() {
           <h1 className="text-2xl font-semibold">Estructura</h1>
           <p className="text-sm text-slate-400">Un bloque a la vez. El reloj corre por vos.</p>
         </div>
-        <button
-          onClick={() => setShowEditor((v) => !v)}
-          className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
-        >
-          {showEditor ? 'Listo' : '⚙️ Configurar'}
-        </button>
+        {active && (
+          <button
+            onClick={() => setShowEditor((v) => !v)}
+            className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+          >
+            {showEditor ? 'Listo' : '⚙️ Configurar'}
+          </button>
+        )}
       </div>
 
       {/* Selector de contexto (casa / local / …) */}
@@ -141,15 +158,15 @@ export default function Estructura() {
       )}
 
       {!active ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-          <p className="mb-3 text-slate-300">Todavía no tenés ninguna rutina.</p>
-          <button
-            onClick={() => setShowEditor(true)}
-            className="rounded-xl border border-sky-400/40 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 hover:bg-sky-500/20"
-          >
-            Crear mi primera rutina
-          </button>
-        </div>
+        // Sin rutina: el editor permite crear la primera (antes quedaba colgado).
+        <RoutineEditor
+          routine={null}
+          routines={routines}
+          blocks={[]}
+          itemsByBlock={{}}
+          habits={habits}
+          onChange={load}
+        />
       ) : (
         <>
           {/* Bloque actual + reloj */}
@@ -210,6 +227,16 @@ export default function Estructura() {
                 </div>
               )}
             </div>
+
+            {/* Checklist del bloque actual */}
+            {current && (
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Tareas de este bloque
+                </div>
+                <Checklist items={currentItems} blockId={current.id} onChange={load} />
+              </div>
+            )}
           </div>
 
           {/* Aplazar todo */}
@@ -219,14 +246,21 @@ export default function Estructura() {
 
           {/* Idea rápida */}
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-2 text-sm font-medium text-slate-300">💭 Sacate la idea de la cabeza</div>
+            <div className="mb-2 text-sm font-medium text-slate-300">
+              💭 Sacate la idea de la cabeza
+            </div>
             <IdeaCapture ideas={ideas} blockId={current?.id ?? null} onChange={load} />
           </div>
 
           {/* Timeline del día */}
           <div className="mt-6">
             <div className="mb-2 text-sm font-medium text-slate-400">Bloques de hoy</div>
-            <Timeline blocks={timed} currentId={current?.id ?? null} onChange={load} />
+            <Timeline
+              blocks={timed}
+              currentId={current?.id ?? null}
+              itemsByBlock={itemsByBlock}
+              onChange={load}
+            />
           </div>
 
           {/* Editor */}
@@ -236,6 +270,7 @@ export default function Estructura() {
                 routine={active}
                 routines={routines}
                 blocks={blocks}
+                itemsByBlock={itemsByBlock}
                 habits={habits}
                 onChange={load}
               />
@@ -249,6 +284,7 @@ export default function Estructura() {
           info={info}
           mode={mode}
           onToggleMode={() => setMode((m) => (m === 'up' ? 'down' : 'up'))}
+          items={currentItems}
           ideas={ideas}
           onChange={load}
           onClose={() => setShowFocus(false)}

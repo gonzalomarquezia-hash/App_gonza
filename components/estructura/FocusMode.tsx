@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { ActiveBlockInfo, Idea } from '@/lib/types';
+import type { ActiveBlockInfo, BlockItemView, Idea } from '@/lib/types';
 import { fmtDuration, minToClock } from '@/lib/estructura';
 import IdeaCapture from './IdeaCapture';
+import Checklist from './Checklist';
 
 // Pantalla completa de foco: fondo negro, reloj enorme, círculo que se vacía con
 // el tiempo del bloque, y captura de idea siempre a mano.
@@ -11,6 +12,7 @@ export default function FocusMode({
   info,
   mode,
   onToggleMode,
+  items,
   ideas,
   onChange,
   onClose,
@@ -18,6 +20,7 @@ export default function FocusMode({
   info: ActiveBlockInfo;
   mode: 'up' | 'down';
   onToggleMode: () => void;
+  items: BlockItemView[];
   ideas: Idea[];
   onChange: () => void;
   onClose: () => void;
@@ -111,6 +114,12 @@ export default function FocusMode({
           </div>
         )}
       </div>
+
+      {current && items.length > 0 && (
+        <div className="mt-6 w-full max-w-md text-left">
+          <Checklist items={items} blockId={current.id} onChange={onChange} />
+        </div>
+      )}
 
       <div className="mt-8 w-full max-w-md">
         {showNote ? (

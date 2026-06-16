@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { TimedBlock } from '@/lib/types';
+import type { TimedBlock, BlockItemView } from '@/lib/types';
 import { minToClock, setBlockDone } from '@/lib/estructura';
 
 const KIND_ICON: Record<string, string> = { task: '📌', habit: '🏔️', break: '☕️' };
@@ -9,10 +9,12 @@ const KIND_ICON: Record<string, string> = { task: '📌', habit: '🏔️', brea
 export default function Timeline({
   blocks,
   currentId,
+  itemsByBlock,
   onChange,
 }: {
   blocks: TimedBlock[];
   currentId: string | null;
+  itemsByBlock: Record<string, BlockItemView[]>;
   onChange: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
@@ -38,6 +40,8 @@ export default function Timeline({
     <div className="space-y-2">
       {blocks.map((b) => {
         const active = b.id === currentId;
+        const its = itemsByBlock[b.id] ?? [];
+        const doneCount = its.filter((it) => it.done).length;
         return (
           <div
             key={b.id}
@@ -77,7 +81,14 @@ export default function Timeline({
               )}
             </div>
 
-            <div className="shrink-0 text-xs text-slate-500">{b.duration_min}m</div>
+            <div className="shrink-0 text-right text-xs text-slate-500">
+              {its.length > 0 && (
+                <div className={doneCount === its.length ? 'text-emerald-400' : 'text-slate-400'}>
+                  ✓ {doneCount}/{its.length}
+                </div>
+              )}
+              <div>{b.duration_min}m</div>
+            </div>
           </div>
         );
       })}

@@ -155,3 +155,28 @@ from routines r,
           ('Ocio','Descanso','10:00',60,2),
           ('Cocinar','Almuerzo','11:00',45,3)) as x(name, descr, st, dur, pos)
 where r.is_active and not exists (select 1 from blocks);
+
+-- Mini-tareas (checklist) de un bloque. Plantilla: se repiten cada día.
+create table if not exists block_items (
+  id          uuid primary key default gen_random_uuid(),
+  block_id    uuid not null references blocks(id) on delete cascade,
+  text        text not null,
+  pos         int  not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists block_items_block_idx on block_items (block_id, pos);
+
+-- Tildado de cada mini-tarea por día (se resetea de noche). unique(item_id, day).
+create table if not exists block_item_log (
+  id         uuid primary key default gen_random_uuid(),
+  item_id    uuid not null references block_items(id) on delete cascade,
+  day        date not null default current_date,
+  done       boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (item_id, day)
+);
+
+alter table block_items    disable row level security;
+alter table block_item_log disable row level security;
+grant all on table block_items    to anon, authenticated;
+grant all on table block_item_log to anon, authenticated;
