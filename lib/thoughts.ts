@@ -2,14 +2,77 @@ import { supabase } from './supabaseClient';
 import { asError, todayStr } from './habits';
 import type { Thought, ThoughtKind, Emotion, ThoughtStatus } from './types';
 
-// ── Catálogo de emociones (etiqueta + color del badge) ──────
-export const EMOTIONS: { value: Emotion; label: string; dot: string; chip: string }[] = [
-  { value: 'ansiedad', label: 'Ansiedad', dot: 'bg-amber-400', chip: 'border-amber-400/40 text-amber-200' },
-  { value: 'culpa', label: 'Culpa', dot: 'bg-violet-400', chip: 'border-violet-400/40 text-violet-200' },
-  { value: 'bronca', label: 'Bronca', dot: 'bg-rose-400', chip: 'border-rose-400/40 text-rose-200' },
-  { value: 'miedo', label: 'Miedo', dot: 'bg-indigo-400', chip: 'border-indigo-400/40 text-indigo-200' },
-  { value: 'tristeza', label: 'Tristeza', dot: 'bg-sky-400', chip: 'border-sky-400/40 text-sky-200' },
-  { value: 'otra', label: 'Otra', dot: 'bg-slate-400', chip: 'border-slate-400/40 text-slate-300' },
+// ── Catálogo de emociones ────────────────────────────────────
+export const EMOTIONS: {
+  value: Emotion;
+  label: string;
+  emoji: string;
+  dot: string;
+  chip: string;
+  cardBorder: string;
+  cardBg: string;
+  activePill: string;
+}[] = [
+  {
+    value: 'ansiedad',
+    label: 'Ansiedad',
+    emoji: '😰',
+    dot: 'bg-amber-400',
+    chip: 'border-amber-400/40 text-amber-300',
+    cardBorder: 'border-l-amber-500',
+    cardBg: 'bg-amber-500/10',
+    activePill: 'bg-amber-500/20 border-amber-400/60 text-amber-200',
+  },
+  {
+    value: 'culpa',
+    label: 'Culpa',
+    emoji: '😔',
+    dot: 'bg-violet-400',
+    chip: 'border-violet-400/40 text-violet-300',
+    cardBorder: 'border-l-violet-500',
+    cardBg: 'bg-violet-500/10',
+    activePill: 'bg-violet-500/20 border-violet-400/60 text-violet-200',
+  },
+  {
+    value: 'bronca',
+    label: 'Bronca',
+    emoji: '😤',
+    dot: 'bg-rose-400',
+    chip: 'border-rose-400/40 text-rose-300',
+    cardBorder: 'border-l-rose-500',
+    cardBg: 'bg-rose-500/10',
+    activePill: 'bg-rose-500/20 border-rose-400/60 text-rose-200',
+  },
+  {
+    value: 'miedo',
+    label: 'Miedo',
+    emoji: '😨',
+    dot: 'bg-indigo-400',
+    chip: 'border-indigo-400/40 text-indigo-300',
+    cardBorder: 'border-l-indigo-500',
+    cardBg: 'bg-indigo-500/10',
+    activePill: 'bg-indigo-500/20 border-indigo-400/60 text-indigo-200',
+  },
+  {
+    value: 'tristeza',
+    label: 'Tristeza',
+    emoji: '😢',
+    dot: 'bg-sky-400',
+    chip: 'border-sky-400/40 text-sky-300',
+    cardBorder: 'border-l-sky-500',
+    cardBg: 'bg-sky-500/10',
+    activePill: 'bg-sky-500/20 border-sky-400/60 text-sky-200',
+  },
+  {
+    value: 'otra',
+    label: 'Otra',
+    emoji: '💭',
+    dot: 'bg-slate-400',
+    chip: 'border-slate-400/40 text-slate-300',
+    cardBorder: 'border-l-slate-500',
+    cardBg: 'bg-slate-500/10',
+    activePill: 'bg-slate-500/20 border-slate-400/60 text-slate-200',
+  },
 ];
 
 export function emotionMeta(e: Emotion | null) {
@@ -35,8 +98,6 @@ export async function getThoughts(): Promise<Thought[]> {
 
 // ── Escritura ───────────────────────────────────────────────
 
-// Captura rápida. Una tarea entra lista para agendar; un pensamiento entra a la
-// bandeja para procesar tranquilo más tarde.
 export async function addThought(input: {
   text: string;
   kind: ThoughtKind;
@@ -58,17 +119,7 @@ export async function addThought(input: {
 export async function updateThought(
   id: string,
   patch: Partial<
-    Pick<
-      Thought,
-      | 'text'
-      | 'kind'
-      | 'emotion'
-      | 'intensity'
-      | 'controllable'
-      | 'status'
-      | 'action_text'
-      | 'due_date'
-    >
+    Pick<Thought, 'text' | 'kind' | 'emotion' | 'intensity' | 'controllable' | 'status' | 'action_text' | 'due_date'>
   >,
 ): Promise<void> {
   const clean: Record<string, unknown> = { ...patch };
@@ -79,16 +130,46 @@ export async function updateThought(
   if (error) throw asError(error);
 }
 
-// Marca un pensamiento/tarea como procesado y le fija el estado final.
 export async function processThought(
   id: string,
-  patch: Partial<
-    Pick<Thought, 'kind' | 'emotion' | 'intensity' | 'controllable' | 'action_text' | 'due_date'>
-  > & { status: ThoughtStatus },
+  patch: Partial<Pick<Thought, 'kind' | 'emotion' | 'intensity' | 'controllable' | 'action_text' | 'due_date'>> & {
+    status: ThoughtStatus;
+  },
 ): Promise<void> {
   const { error } = await supabase
     .from('thoughts')
     .update({ ...patch, processed_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw asError(error);
+}
+
+// Crea la tarea en thoughts y marca la emoción como "tomé acción".
+export async function assignTaskToEmotion(emotionId: string, taskText: string): Promise<void> {
+  const t = taskText.trim();
+  if (!t) return;
+  const { error: e1 } = await supabase.from('thoughts').insert({
+    text: t,
+    kind: 'task',
+    status: 'inbox',
+  });
+  if (e1) throw asError(e1);
+  const { error: e2 } = await supabase
+    .from('thoughts')
+    .update({
+      status: 'action',
+      action_text: t,
+      controllable: true,
+      processed_at: new Date().toISOString(),
+    })
+    .eq('id', emotionId);
+  if (e2) throw asError(e2);
+}
+
+// Marca un pensamiento como "no depende de mí / soltado".
+export async function releaseEmotion(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('thoughts')
+    .update({ status: 'released', controllable: false, processed_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw asError(error);
 }
@@ -98,42 +179,8 @@ export async function deleteThought(id: string): Promise<void> {
   if (error) throw asError(error);
 }
 
-// ── Resumen semanal (calculado en cliente) ──────────────────
+// ── Fecha amigable ───────────────────────────────────────────
 
-export interface WeekSummary {
-  withAction: number; // resueltas con acción esta semana
-  released: number; // soltadas (no control) esta semana
-  topEmotion: { emotion: Emotion; count: number } | null;
-}
-
-export function weekSummary(thoughts: Thought[], ref = new Date()): WeekSummary {
-  // Lunes de esta semana a las 00:00.
-  const monday = new Date(ref);
-  const dow = (monday.getDay() + 6) % 7; // 0 = lunes
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(monday.getDate() - dow);
-  const from = monday.getTime();
-
-  const inWeek = (t: Thought) => new Date(t.processed_at ?? t.created_at).getTime() >= from;
-
-  let withAction = 0;
-  let released = 0;
-  const emoCount = new Map<Emotion, number>();
-  for (const t of thoughts) {
-    if (!inWeek(t)) continue;
-    if (t.status === 'action' || t.status === 'done') withAction++;
-    if (t.status === 'released') released++;
-    if (t.emotion) emoCount.set(t.emotion, (emoCount.get(t.emotion) ?? 0) + 1);
-  }
-
-  let topEmotion: WeekSummary['topEmotion'] = null;
-  for (const [emotion, count] of emoCount) {
-    if (!topEmotion || count > topEmotion.count) topEmotion = { emotion, count };
-  }
-  return { withAction, released, topEmotion };
-}
-
-// Fecha amigable para mostrar (Hoy / Mañana / "mar 16 jun").
 export function dueLabel(due: string | null): string | null {
   if (!due) return null;
   const t = todayStr();
@@ -143,8 +190,6 @@ export function dueLabel(due: string | null): string | null {
   if (due === t) return 'Hoy';
   if (due === tomorrow) return 'Mañana';
   const dow = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][dt.getDay()];
-  const mon = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][
-    m - 1
-  ];
+  const mon = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][m - 1];
   return `${dow} ${d} ${mon}`;
 }

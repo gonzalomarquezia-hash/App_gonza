@@ -5,10 +5,8 @@ import { ChevronDown } from 'lucide-react';
 import type { ThoughtKind, Emotion } from '@/lib/types';
 import { addThought, EMOTIONS } from '@/lib/thoughts';
 
-// Captura unificada: elegís de un desplegable si es una TAREA pendiente o un
-// PENSAMIENTO/EMOCIÓN. Si es pensamiento, al costado elegís la emoción que lo
-// acompañó. Se guarda en la pestaña Pensamientos. Se usa en Estructura (casilla
-// del reloj), en pantalla completa (Foco) y en la propia pestaña Pensamientos.
+// Captura dual (tarea / pensamiento+emoción) para usar en Estructura y FocusMode.
+// La pestaña Pensamientos tiene su propia captura separada por tab.
 export default function ThoughtCapture({
   onSaved,
   compact = false,
@@ -21,6 +19,7 @@ export default function ThoughtCapture({
   const [emotion, setEmotion] = useState<Emotion>('ansiedad');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const isThought = kind === 'emotion';
 
@@ -28,12 +27,15 @@ export default function ThoughtCapture({
     const t = text.trim();
     if (!t) return;
     setBusy(true);
+    setErr(null);
     try {
       await addThought({ text: t, kind, emotion: isThought ? emotion : null });
       setText('');
       setSaved(true);
-      setTimeout(() => setSaved(false), 1800);
+      setTimeout(() => setSaved(false), 2000);
       onSaved?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Error al guardar');
     } finally {
       setBusy(false);
     }
@@ -48,9 +50,8 @@ export default function ThoughtCapture({
 
   return (
     <div>
-      {/* Fila de desplegables: categoría + (si es pensamiento) emoción */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <Select
+        <NativeSelect
           value={kind}
           onChange={(v) => setKind(v as ThoughtKind)}
           options={[
@@ -59,11 +60,10 @@ export default function ThoughtCapture({
           ]}
         />
         {isThought && (
-          <Select
+          <NativeSelect
             value={emotion}
             onChange={(v) => setEmotion(v as Emotion)}
-            options={EMOTIONS.map((e) => ({ value: e.value, label: e.label }))}
-            hint="emoción"
+            options={EMOTIONS.map((e) => ({ value: e.value, label: `${e.emoji} ${e.label}` }))}
           />
         )}
       </div>
@@ -76,7 +76,7 @@ export default function ThoughtCapture({
           rows={compact ? 1 : 2}
           placeholder={
             isThought
-              ? '¿Qué se te cruzó por la cabeza? Anotalo y soltalo…'
+              ? '¿Qué se te cruzó? Anotalo y soltalo…'
               : '¿Qué tenés pendiente? Anotá la tarea…'
           }
           className="flex-1 resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
@@ -84,38 +84,36 @@ export default function ThoughtCapture({
         <button
           onClick={save}
           disabled={busy || !text.trim()}
-          className="shrink-0 rounded-xl border border-sky-400/40 bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
+          className="shrink-0 rounded-xl border border-orange-400/40 bg-orange-500/10 px-3 py-2 text-sm font-medium text-orange-200 hover:bg-orange-500/20 disabled:opacity-40"
         >
           Guardar
         </button>
       </div>
+
       {saved && (
         <p className="mt-1 text-xs text-emerald-400">
-          ✓ Guardado en Pensamientos. {isThought ? 'Después lo procesás tranquilo.' : 'Seguí tranquilo.'}
+          Guardado en Pensamientos. {isThought ? 'Después lo procesás tranquilo.' : 'Seguí.'}
         </p>
       )}
+      {err && <p className="mt-1 text-xs text-rose-400">{err}</p>}
     </div>
   );
 }
 
-// Desplegable nativo estilizado (dos o más opciones).
-function Select({
+function NativeSelect({
   value,
   onChange,
   options,
-  hint,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
-  hint?: string;
 }) {
   return (
     <div className="relative inline-flex items-center">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        aria-label={hint ?? 'categoría'}
         className="appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pl-3 pr-8 text-sm text-slate-100 outline-none focus:border-sky-400/50"
       >
         {options.map((o) => (
