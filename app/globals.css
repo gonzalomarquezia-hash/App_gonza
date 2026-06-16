@@ -19,15 +19,21 @@ body {
 }
 
 /* Reloj tipo flip (modo foco) */
+.flip-clock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1vw, 12px);
+}
 .flip-card {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(60px, 21vw, 410px);
-  height: clamp(92px, 52vh, 560px);
+  width: clamp(40px, 12.5vw, 220px);
+  height: clamp(64px, 38vh, 340px);
   background: #232428;
-  border-radius: clamp(8px, 2.2vw, 28px);
+  border-radius: clamp(6px, 1.6vw, 22px);
   overflow: hidden;
 }
 .flip-card::after {
@@ -44,10 +50,23 @@ body {
 .flip-digit {
   font-weight: 700;
   color: #d2d5d9;
-  font-size: clamp(60px, 21vw, 400px);
+  font-size: clamp(42px, 12.5vw, 210px);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   animation: flip-in 0.4s ease;
+}
+/* Dos puntos de reloj entre grupos */
+.flip-colon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(12px, 4vh, 44px);
+}
+.flip-dot {
+  width: clamp(7px, 1.5vw, 22px);
+  height: clamp(7px, 1.5vw, 22px);
+  border-radius: 9999px;
+  background: #d2d5d9;
 }
 @keyframes flip-in {
   0% {

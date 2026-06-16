@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Settings, Maximize2, Plus, Home, Store, MapPin } from 'lucide-react';
+import { Settings, Maximize2, Plus } from 'lucide-react';
 import type {
   Routine,
   Block,
@@ -55,15 +55,10 @@ import IdeaCapture from '@/components/estructura/IdeaCapture';
 import PostponeBar from '@/components/estructura/PostponeBar';
 import DaySelector from '@/components/estructura/DaySelector';
 import DayProgress from '@/components/estructura/DayProgress';
+import ContextSelector from '@/components/estructura/ContextSelector';
+import QuickAdd from '@/components/estructura/QuickAdd';
 import RoutineEditor from '@/components/estructura/RoutineEditor';
 import FocusMode from '@/components/estructura/FocusMode';
-
-function ContextIcon({ context }: { context: string }) {
-  const cls = 'h-4 w-4';
-  if (context === 'casa') return <Home className={cls} />;
-  if (context === 'local') return <Store className={cls} />;
-  return <MapPin className={cls} />;
-}
 
 export default function Estructura() {
   const [day, setDay] = useState(() => todayStr());
@@ -88,6 +83,7 @@ export default function Estructura() {
   const [mode, setMode] = useState<'up' | 'down'>('down');
   const [showEditor, setShowEditor] = useState(false);
   const [showFocus, setShowFocus] = useState(false);
+  const [showQuickAgenda, setShowQuickAgenda] = useState(false);
 
   const now = useNow(1000);
   const isToday = day === todayStr();
@@ -251,20 +247,24 @@ export default function Estructura() {
       duration_min: 30,
       pos: blocks.length,
     });
-    setShowEditor(true);
     await load();
   }
-  async function quickAddBlock() {
+  // Agregar un bloque por nombre. Hoy arranca en el momento presente; otro día,
+  // después del último bloque (o al inicio del día).
+  async function addQuickBlock(name: string) {
     if (!active) return;
-    const last = blocks[blocks.length - 1];
-    const start = last ? minToTime(timeToMin(last.start_time) + last.duration_min) : '08:00';
-    await createBlock(active.id, {
-      name: 'Nuevo bloque',
-      start_time: start,
-      duration_min: 30,
-      pos: blocks.length,
-    });
-    setShowEditor(true);
+    let startMin: number;
+    if (isToday) {
+      const d2 = new Date();
+      startMin = Math.floor((d2.getHours() * 60 + d2.getMinutes()) / 5) * 5;
+    } else {
+      const last = blocks[blocks.length - 1];
+      startMin = last
+        ? timeToMin(last.start_time) + last.duration_min
+        : timeToMin(active.day_start_time);
+    }
+    const base = minToTime(Math.max(0, startMin - dayState.offset_min));
+    await createBlock(active.id, { name, start_time: base, duration_min: 30, pos: blocks.length });
     await load();
   }
   async function setDayWindowToday(startHHMM: string, endHHMM: string) {
@@ -302,6 +302,30 @@ export default function Estructura() {
       </PageContainer>
     );
 
+  // Vista de configuración (separada, no mezclada con la agenda).
+  if (active && showEditor)
+    return (
+      <PageContainer>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">Configurar rutina</h1>
+          <button
+            onClick={() => setShowEditor(false)}
+            className="rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/10"
+          >
+            Listo
+          </button>
+        </div>
+        <RoutineEditor
+          routine={active}
+          routines={routines}
+          blocks={blocks}
+          itemsByBlock={itemsByBlock}
+          habits={habits}
+          onChange={load}
+        />
+      </PageContainer>
+    );
+
   const { current, next } = info;
   const currentItems = current ? (itemsByBlock[current.id] ?? []) : [];
   const minsToNext = next ? Math.max(0, next.startMin - nowMin) : null;
@@ -326,22 +350,15 @@ export default function Estructura() {
         <DaySelector day={day} onChange={setDay} />
       </div>
 
-      {/* Contextos */}
+      {/* Contexto (Casa / Local / …) */}
       {routines.length > 0 && (
-        <div className="mb-3 flex flex-wrap justify-center gap-2">
-          {routines.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => switchRoutine(r.id)}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm ${
-                r.id === active?.id
-                  ? 'border-sky-400/50 bg-sky-500/10 text-sky-200'
-                  : 'border-white/15 text-slate-400 hover:bg-white/5'
-              }`}
-            >
-              <ContextIcon context={r.context} /> {r.name}
-            </button>
-          ))}
+        <div className="mb-3 flex justify-center">
+          <ContextSelector
+            routines={routines}
+            activeId={active?.id ?? null}
+            onSwitch={switchRoutine}
+            onCreate={() => setShowEditor(true)}
+          />
         </div>
       )}
 
@@ -437,6 +454,11 @@ export default function Estructura() {
                     {minsToNext === 0 ? 'ahora' : `en ${fmtHuman(minsToNext)}`} ({minToClock(next.startMin)})
                   </div>
                 )}
+                {!current && (
+                  <div className="mt-4 w-full max-w-md">
+                    <QuickAdd onAdd={addQuickBlock} placeholder="¿Qué vas a hacer? Agregar bloque…" />
+                  </div>
+                )}
               </div>
             )}
 
@@ -466,12 +488,17 @@ export default function Estructura() {
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-medium text-slate-400">Agenda · {dayLabel(day)}</span>
               <button
-                onClick={quickAddBlock}
+                onClick={() => setShowQuickAgenda((v) => !v)}
                 className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1 text-xs text-slate-200 hover:bg-white/10"
               >
                 <Plus className="h-3.5 w-3.5" /> Bloque
               </button>
             </div>
+            {showQuickAgenda && (
+              <div className="mb-2">
+                <QuickAdd onAdd={addQuickBlock} autoFocus placeholder="Nombre del bloque…" />
+              </div>
+            )}
             <Agenda
               blocks={timed}
               gaps={gaps}
@@ -508,19 +535,6 @@ export default function Estructura() {
               </div>
             )}
           </div>
-
-          {showEditor && (
-            <div className="mt-6">
-              <RoutineEditor
-                routine={active}
-                routines={routines}
-                blocks={blocks}
-                itemsByBlock={itemsByBlock}
-                habits={habits}
-                onChange={load}
-              />
-            </div>
-          )}
         </>
       )}
 
