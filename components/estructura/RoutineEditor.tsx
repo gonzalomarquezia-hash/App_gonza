@@ -9,13 +9,14 @@ import {
   createRoutine,
   renameRoutine,
   deleteRoutine,
+  setRoutineDayWindow,
 } from '@/lib/estructura';
 import Checklist from './Checklist';
 
 const KINDS: { value: BlockKind; label: string }[] = [
-  { value: 'task', label: '📌 Tarea' },
-  { value: 'habit', label: '🏔️ Hábito' },
-  { value: 'break', label: '☕️ Descanso' },
+  { value: 'task', label: 'Tarea' },
+  { value: 'habit', label: 'Hábito' },
+  { value: 'break', label: 'Descanso' },
 ];
 
 export default function RoutineEditor({
@@ -90,9 +91,9 @@ export default function RoutineEditor({
             onChange={(e) => setNewContext(e.target.value)}
             className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
           >
-            <option value="casa">🏠 Casa</option>
-            <option value="local">🏪 Local</option>
-            <option value="otro">📍 Otro</option>
+            <option value="casa">Casa</option>
+            <option value="local">Local</option>
+            <option value="otro">Otro</option>
           </select>
           <button
             onClick={addRoutine}
@@ -117,6 +118,9 @@ export default function RoutineEditor({
 
       {/* Nombre / contexto de la rutina actual */}
       <RoutineHeader routine={routine} canDelete={routines.length > 1} onChange={onChange} />
+
+      {/* Ventana del día por defecto */}
+      <DayWindowRow routine={routine} onChange={onChange} />
 
       {/* Bloques */}
       <div className="mt-4 space-y-3">
@@ -156,9 +160,9 @@ export default function RoutineEditor({
             onChange={(e) => setNewContext(e.target.value)}
             className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
           >
-            <option value="casa">🏠 Casa</option>
-            <option value="local">🏪 Local</option>
-            <option value="otro">📍 Otro</option>
+            <option value="casa">Casa</option>
+            <option value="local">Local</option>
+            <option value="otro">Otro</option>
           </select>
           <button
             onClick={addRoutine}
@@ -213,9 +217,9 @@ function RoutineHeader({
         onBlur={save}
         className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
       >
-        <option value="casa">🏠 Casa</option>
-        <option value="local">🏪 Local</option>
-        <option value="otro">📍 Otro</option>
+        <option value="casa">Casa</option>
+        <option value="local">Local</option>
+        <option value="otro">Otro</option>
       </select>
       {canDelete && (
         <button
@@ -313,7 +317,7 @@ function BlockRow({
           <option value="">Sin hábito enlazado</option>
           {habits.map((h) => (
             <option key={h.id} value={h.id}>
-              🏔️ {h.name}
+              {h.name}
             </option>
           ))}
         </select>
@@ -349,6 +353,43 @@ function BlockRow({
           Guardar
         </button>
       </div>
+    </div>
+  );
+}
+
+function DayWindowRow({ routine, onChange }: { routine: Routine; onChange: () => void }) {
+  const [start, setStart] = useState(routine.day_start_time);
+  const [end, setEnd] = useState(routine.day_end_time);
+  const dirty = start !== routine.day_start_time || end !== routine.day_end_time;
+
+  async function save() {
+    await setRoutineDayWindow(routine.id, start, end);
+    onChange();
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-slate-400">
+      Tu día: me despierto
+      <input
+        type="time"
+        value={start}
+        onChange={(e) => setStart(e.target.value)}
+        className="rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-slate-100 outline-none focus:border-white/30"
+      />
+      lo termino
+      <input
+        type="time"
+        value={end}
+        onChange={(e) => setEnd(e.target.value)}
+        className="rounded-lg border border-white/15 bg-transparent px-2 py-1.5 text-slate-100 outline-none focus:border-white/30"
+      />
+      <button
+        onClick={save}
+        disabled={!dirty}
+        className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-40"
+      >
+        Guardar
+      </button>
     </div>
   );
 }

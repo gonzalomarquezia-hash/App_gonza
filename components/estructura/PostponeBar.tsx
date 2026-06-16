@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { postponeAll, resetDayOffset } from '@/lib/estructura';
 
-// Aplazar TODA la cadena de bloques de una. Offset solo de hoy; mañana arranca en cero.
+// Aplazar TODA la cadena de bloques de una. Offset solo de ese día.
 export default function PostponeBar({
   routineId,
+  day,
   offset,
   onChange,
 }: {
   routineId: string;
+  day: string;
   offset: number;
   onChange: () => void;
 }) {
@@ -19,7 +21,7 @@ export default function PostponeBar({
   async function shift(minutes: number) {
     setBusy(true);
     try {
-      await postponeAll(routineId, minutes);
+      await postponeAll(routineId, minutes, day);
       onChange();
     } finally {
       setBusy(false);
@@ -29,7 +31,7 @@ export default function PostponeBar({
   async function reset() {
     setBusy(true);
     try {
-      await resetDayOffset(routineId);
+      await resetDayOffset(routineId, day);
       onChange();
     } finally {
       setBusy(false);

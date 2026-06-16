@@ -45,7 +45,25 @@ export interface Routine {
   name: string;
   context: string; // 'casa' | 'local'
   is_active: boolean;
+  day_start_time: string; // "HH:MM" — a qué hora arranca tu día (default)
+  day_end_time: string; // "HH:MM" — a qué hora lo terminás (00:00 = medianoche)
   created_at: string;
+}
+
+// Estado del día: corrimiento global + override de la ventana del día.
+export interface DayState {
+  offset_min: number;
+  day_start_override: string | null; // "HH:MM"
+  day_end_override: string | null; // "HH:MM"
+}
+
+// Edición de un bloque/hábito SOLO para un día.
+export interface BlockDayEdit {
+  ref_type: 'block' | 'habit';
+  ref_id: string;
+  skipped: boolean;
+  start_override: string | null; // "HH:MM"
+  duration_override: number | null;
 }
 
 export interface Block {
@@ -100,6 +118,7 @@ export interface TimedBlock extends Block {
   endMin: number; // minutos desde medianoche (fin)
   done: boolean;
   virtual?: boolean; // true = proyectado desde un hábito (no es una fila de blocks)
+  edited?: boolean; // true = movido/duración cambiada solo para este día
 }
 
 export interface ActiveBlockInfo {

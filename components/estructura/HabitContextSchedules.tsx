@@ -9,8 +9,6 @@ import {
   clearHabitSchedule,
 } from '@/lib/estructura';
 
-const CTX_ICON: Record<string, string> = { casa: '🏠', local: '🏪', otro: '📍' };
-
 // Horario de este hábito por contexto (rutina). Lo que cargues acá hace que el
 // hábito aparezca como bloque en esa rutina, a esa hora. Vacío = no aparece ahí.
 export default function HabitContextSchedules({ habitId }: { habitId: string }) {
@@ -117,9 +115,7 @@ function RoutineRow({
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-3">
-      <div className="min-w-[5rem] text-sm font-medium">
-        {CTX_ICON[routine.context] ?? '📍'} {routine.name}
-      </div>
+      <div className="min-w-[5rem] text-sm font-medium">{routine.name}</div>
       <label className="flex items-center gap-1 text-sm text-slate-400">
         a las
         <input

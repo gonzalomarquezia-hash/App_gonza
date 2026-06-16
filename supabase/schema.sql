@@ -196,3 +196,29 @@ create index if not exists habit_schedules_routine_idx on habit_schedules (routi
 
 alter table habit_schedules disable row level security;
 grant all on table habit_schedules to anon, authenticated;
+
+-- Ventana del día (despertar/dormir) por rutina, default; ajustable por día.
+alter table routines add column if not exists day_start_time time not null default '08:00';
+alter table routines add column if not exists day_end_time   time not null default '00:00';
+
+-- Override de la ventana del día solo para un día concreto.
+alter table routine_day_state add column if not exists day_start_override time;
+alter table routine_day_state add column if not exists day_end_override   time;
+
+-- Ediciones de un bloque (o hábito proyectado) SOLO para un día: sacarlo, moverlo,
+-- o cambiar su duración, sin tocar la rutina/hábito base.
+create table if not exists block_day_edits (
+  id                uuid primary key default gen_random_uuid(),
+  day               date not null,
+  routine_id        uuid not null references routines(id) on delete cascade,
+  ref_type          text not null check (ref_type in ('block','habit')),
+  ref_id            uuid not null,
+  skipped           boolean not null default false,
+  start_override    time,
+  duration_override int,
+  created_at        timestamptz not null default now(),
+  unique (day, ref_type, ref_id)
+);
+create index if not exists block_day_edits_idx on block_day_edits (routine_id, day);
+alter table block_day_edits disable row level security;
+grant all on table block_day_edits to anon, authenticated;

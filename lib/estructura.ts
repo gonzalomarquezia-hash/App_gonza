@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { asError, todayStr, setToday, clearToday, ALL_WEEK_DAYS } from './habits';
+import { asError, todayStr, setCheckin, clearCheckin, ALL_WEEK_DAYS } from './habits';
 import type {
   Routine,
   Block,
@@ -7,10 +7,16 @@ import type {
   Habit,
   HabitSchedule,
   CheckinState,
+  DayState,
+  BlockDayEdit,
   Idea,
   TimedBlock,
   ActiveBlockInfo,
 } from './types';
+
+// Clave de un edit del día (bloque real o hábito proyectado).
+export type EditMap = Map<string, BlockDayEdit>;
+const editKey = (type: 'block' | 'habit', id: string) => `${type}:${id}`;
 
 // ── Matemática de horarios (pura, sin React) ────────────────
 
@@ -32,6 +38,37 @@ export function minToClock(min: number): string {
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 }
 
+// minutos → "5 h 20 min" / "45 min" / "2 h".
+export function fmtHuman(totalMin: number): string {
+  const m = Math.max(0, Math.round(totalMin));
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  if (h && min) return `${h} h ${min} min`;
+  if (h) return `${h} h`;
+  return `${min} min`;
+}
+
+// "YYYY-MM-DD" + n días.
+export function addDays(day: string, n: number): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return todayStr(new Date(y, m - 1, d + n));
+}
+
+// Etiqueta amigable de un día: Hoy / Mañana / Ayer / "mar 16 jun".
+export function dayLabel(day: string): string {
+  const t = todayStr();
+  if (day === t) return 'Hoy';
+  if (day === addDays(t, 1)) return 'Mañana';
+  if (day === addDays(t, -1)) return 'Ayer';
+  const [y, m, d] = day.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dow = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][dt.getDay()];
+  const mon = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][
+    m - 1
+  ];
+  return `${dow} ${d} ${mon}`;
+}
+
 // segundos → "MM:SS" o "H:MM:SS".
 export function fmtDuration(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));
@@ -41,15 +78,33 @@ export function fmtDuration(totalSec: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-// Resuelve los bloques a horario real: aplica el offset del día y marca los hechos.
-export function layoutBlocks(blocks: Block[], offsetMin: number, doneIds: string[]): TimedBlock[] {
+// Resuelve los bloques a horario real: aplica el offset del día, las ediciones
+// del día (sacar/mover/duración) y marca los hechos.
+export function layoutBlocks(
+  blocks: Block[],
+  offsetMin: number,
+  doneIds: string[],
+  edits?: EditMap,
+): TimedBlock[] {
   const done = new Set(doneIds);
-  return blocks
-    .map((b) => {
-      const startMin = timeToMin(b.start_time) + offsetMin;
-      return { ...b, startMin, endMin: startMin + b.duration_min, done: done.has(b.id) };
-    })
-    .sort((a, b) => a.startMin - b.startMin || a.pos - b.pos);
+  const out: TimedBlock[] = [];
+  for (const b of blocks) {
+    const e = edits?.get(editKey('block', b.id));
+    if (e?.skipped) continue;
+    const start = e?.start_override ?? b.start_time;
+    const dur = e?.duration_override ?? b.duration_min;
+    const startMin = timeToMin(start) + offsetMin;
+    out.push({
+      ...b,
+      start_time: start,
+      duration_min: dur,
+      startMin,
+      endMin: startMin + dur,
+      done: done.has(b.id),
+      edited: !!(e && (e.start_override || e.duration_override != null)),
+    });
+  }
+  return out.sort((a, b) => a.startMin - b.startMin || a.pos - b.pos);
 }
 
 // Proyecta los hábitos con horario como bloques virtuales del día.
@@ -61,12 +116,16 @@ export function projectHabitBlocks(
   todayStates: Record<string, CheckinState>,
   offsetMin: number,
   todayWeekday: number,
+  edits?: EditMap,
 ): TimedBlock[] {
   const out: TimedBlock[] = [];
   for (const h of habits) {
     if (h.type !== 'do') continue;
     const days = h.week_days?.length ? h.week_days : ALL_WEEK_DAYS;
     if (!days.includes(todayWeekday)) continue;
+
+    const e = edits?.get(editKey('habit', h.id));
+    if (e?.skipped) continue;
 
     let startTime: string | null = null;
     let duration = 30;
@@ -80,6 +139,8 @@ export function projectHabitBlocks(
       else if (h.end_time)
         duration = Math.max(1, timeToMin(h.end_time) - timeToMin(h.start_time));
     }
+    if (e?.start_override) startTime = e.start_override;
+    if (e?.duration_override) duration = e.duration_override;
     if (!startTime) continue; // hábito sin horario → no se proyecta
 
     const startMin = timeToMin(startTime) + offsetMin;
@@ -98,6 +159,7 @@ export function projectHabitBlocks(
       endMin: startMin + duration,
       done: todayStates[h.id] === 'done',
       virtual: true,
+      edited: !!(e && (e.start_override || e.duration_override != null)),
     });
   }
   return out;
@@ -123,6 +185,38 @@ export function computeActive(timed: TimedBlock[], nowDate: Date): ActiveBlockIn
   return { current, next, elapsedSec, remainingSec, progress };
 }
 
+// Ventana del día (en minutos desde medianoche). Usa el override del día si existe,
+// si no, el default de la rutina. Si el fin es <= inicio (incluido 00:00) se
+// interpreta como que el día termina pasada la medianoche.
+export function dayWindow(routine: Routine, state?: DayState): { startMin: number; endMin: number } {
+  const startStr = state?.day_start_override ?? routine.day_start_time ?? '08:00';
+  const endStr = state?.day_end_override ?? routine.day_end_time ?? '00:00';
+  const startMin = timeToMin(startStr);
+  let endMin = timeToMin(endStr);
+  if (endMin <= startMin) endMin += 1440;
+  return { startMin, endMin };
+}
+
+// Huecos (tiempo sin programar) dentro de la ventana del día.
+export function computeGaps(
+  timed: TimedBlock[],
+  startMin: number,
+  endMin: number,
+  minGap = 10,
+): { startMin: number; endMin: number }[] {
+  const gaps: { startMin: number; endMin: number }[] = [];
+  let cursor = startMin;
+  for (const b of timed) {
+    if (b.endMin <= startMin) continue;
+    const bs = Math.max(b.startMin, startMin);
+    if (bs > cursor) gaps.push({ startMin: cursor, endMin: Math.min(bs, endMin) });
+    cursor = Math.max(cursor, b.endMin);
+    if (cursor >= endMin) break;
+  }
+  if (cursor < endMin) gaps.push({ startMin: cursor, endMin });
+  return gaps.filter((g) => g.endMin - g.startMin >= minGap);
+}
+
 // ── Lectura ─────────────────────────────────────────────────
 
 // Supabase devuelve `time` como "HH:MM:SS"; lo recortamos a "HH:MM".
@@ -137,7 +231,11 @@ export async function getRoutines(): Promise<Routine[]> {
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw asError(error);
-  return data as Routine[];
+  return (data as Routine[]).map((r) => ({
+    ...r,
+    day_start_time: hhmm(r.day_start_time ?? '08:00'),
+    day_end_time: hhmm(r.day_end_time ?? '00:00'),
+  }));
 }
 
 export async function getActiveRoutine(): Promise<Routine | null> {
@@ -165,6 +263,103 @@ export async function getDayOffset(routineId: string, day = todayStr()): Promise
     .maybeSingle();
   if (error) throw asError(error);
   return data?.offset_min ?? 0;
+}
+
+// Estado del día completo: corrimiento + override de la ventana (despertar/dormir).
+export async function getDayState(routineId: string, day = todayStr()): Promise<DayState> {
+  const { data, error } = await supabase
+    .from('routine_day_state')
+    .select('offset_min, day_start_override, day_end_override')
+    .eq('routine_id', routineId)
+    .eq('day', day)
+    .maybeSingle();
+  if (error) throw asError(error);
+  return {
+    offset_min: data?.offset_min ?? 0,
+    day_start_override: data?.day_start_override ? hhmm(data.day_start_override) : null,
+    day_end_override: data?.day_end_override ? hhmm(data.day_end_override) : null,
+  };
+}
+
+// Override de la ventana del día (solo ese día). null = vuelve al default de la rutina.
+export async function setDayWindowOverride(
+  routineId: string,
+  day: string,
+  start: string | null,
+  end: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('routine_day_state')
+    .upsert(
+      { routine_id: routineId, day, day_start_override: start, day_end_override: end },
+      { onConflict: 'routine_id,day' },
+    );
+  if (error) throw asError(error);
+}
+
+// Ventana del día por defecto de la rutina.
+export async function setRoutineDayWindow(
+  routineId: string,
+  start: string,
+  end: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('routines')
+    .update({ day_start_time: start, day_end_time: end })
+    .eq('id', routineId);
+  if (error) throw asError(error);
+}
+
+// ── Ediciones de un bloque/hábito por día ───────────────────
+
+export async function getBlockDayEdits(routineId: string, day = todayStr()): Promise<EditMap> {
+  try {
+    const { data, error } = await supabase
+      .from('block_day_edits')
+      .select('ref_type, ref_id, skipped, start_override, duration_override')
+      .eq('routine_id', routineId)
+      .eq('day', day);
+    if (error) throw asError(error);
+    const map: EditMap = new Map();
+    for (const e of data as BlockDayEdit[]) {
+      map.set(editKey(e.ref_type, e.ref_id), {
+        ...e,
+        start_override: e.start_override ? hhmm(e.start_override) : null,
+      });
+    }
+    return map;
+  } catch {
+    return new Map(); // la tabla todavía no existe → sin ediciones
+  }
+}
+
+export async function setBlockDayEdit(
+  routineId: string,
+  day: string,
+  refType: 'block' | 'habit',
+  refId: string,
+  patch: Partial<Pick<BlockDayEdit, 'skipped' | 'start_override' | 'duration_override'>>,
+): Promise<void> {
+  const { error } = await supabase.from('block_day_edits').upsert(
+    { routine_id: routineId, day, ref_type: refType, ref_id: refId, ...patch },
+    { onConflict: 'day,ref_type,ref_id' },
+  );
+  if (error) throw asError(error);
+}
+
+// Borra todas las ediciones del día para ese bloque/hábito (lo devuelve al original).
+export async function clearBlockDayEdit(
+  day: string,
+  refType: 'block' | 'habit',
+  refId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('block_day_edits')
+    .delete()
+    .eq('day', day)
+    .eq('ref_type', refType)
+    .eq('ref_id', refId);
+  if (error) throw asError(error);
 }
 
 export async function getDoneBlockIds(day = todayStr()): Promise<string[]> {
@@ -251,23 +446,27 @@ export async function deleteBlock(id: string): Promise<void> {
   if (error) throw asError(error);
 }
 
-// Marcar/desmarcar un bloque como hecho hoy. Si está enlazado a un hábito, lo
-// marca/desmarca también en la montaña (reusa setToday/clearToday).
-export async function setBlockDone(block: Block, done: boolean): Promise<void> {
+// Marcar/desmarcar un bloque como hecho en un día. Si está enlazado a un hábito,
+// lo marca/desmarca también en la montaña (ese mismo día).
+export async function setBlockDone(
+  block: Block,
+  done: boolean,
+  day = todayStr(),
+): Promise<void> {
   if (done) {
     const { error } = await supabase
       .from('block_log')
-      .upsert({ block_id: block.id, day: todayStr(), done: true }, { onConflict: 'block_id,day' });
+      .upsert({ block_id: block.id, day, done: true }, { onConflict: 'block_id,day' });
     if (error) throw asError(error);
-    if (block.habit_id) await setToday(block.habit_id, 'done');
+    if (block.habit_id) await setCheckin(block.habit_id, day, 'done');
   } else {
     const { error } = await supabase
       .from('block_log')
       .delete()
       .eq('block_id', block.id)
-      .eq('day', todayStr());
+      .eq('day', day);
     if (error) throw asError(error);
-    if (block.habit_id) await clearToday(block.habit_id);
+    if (block.habit_id) await clearCheckin(block.habit_id, day);
   }
 }
 
@@ -342,12 +541,14 @@ export async function clearHabitSchedule(habitId: string, routineId: string): Pr
   if (error) throw asError(error);
 }
 
-// Estado de hoy de cada hábito (para saber si el bloque proyectado va tildado).
-export async function getTodayHabitStates(): Promise<Record<string, CheckinState>> {
+// Estado de cada hábito en un día (para saber si el bloque proyectado va tildado).
+export async function getHabitStatesForDay(
+  day = todayStr(),
+): Promise<Record<string, CheckinState>> {
   const { data, error } = await supabase
     .from('checkins')
     .select('habit_id,state')
-    .eq('day', todayStr());
+    .eq('day', day);
   if (error) throw asError(error);
   const map: Record<string, CheckinState> = {};
   for (const c of data as { habit_id: string; state: CheckinState }[]) map[c.habit_id] = c.state;
