@@ -1,7 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Routine, Block, BlockItem, BlockItemView, Idea, Habit } from '@/lib/types';
+import type {
+  Routine,
+  Block,
+  BlockItem,
+  BlockItemView,
+  Idea,
+  Habit,
+  TimedBlock,
+} from '@/lib/types';
 import {
   getRoutines,
   getBlocks,
@@ -11,9 +19,13 @@ import {
   getDoneItemIds,
   getIdeas,
   setActiveRoutine,
+  createBlock,
+  deleteBlock,
   layoutBlocks,
   computeActive,
   minToClock,
+  minToTime,
+  timeToMin,
 } from '@/lib/estructura';
 import { getHabits } from '@/lib/habits';
 import { useNow } from '@/lib/useNow';
@@ -101,6 +113,27 @@ export default function Estructura() {
   async function switchRoutine(id: string) {
     if (id === active?.id) return;
     await setActiveRoutine(id);
+    await load();
+  }
+
+  async function quickAddBlock() {
+    if (!active) return;
+    // Arranca después del último bloque, así cae ordenado.
+    const last = blocks[blocks.length - 1];
+    const start = last ? minToTime(timeToMin(last.start_time) + last.duration_min) : '08:00';
+    await createBlock(active.id, {
+      name: 'Nuevo bloque',
+      start_time: start,
+      duration_min: 30,
+      pos: blocks.length,
+    });
+    setShowEditor(true);
+    await load();
+  }
+
+  async function removeBlock(b: TimedBlock) {
+    if (!confirm(`¿Eliminar el bloque "${b.name}"?`)) return;
+    await deleteBlock(b.id);
     await load();
   }
 
@@ -254,12 +287,21 @@ export default function Estructura() {
 
           {/* Timeline del día */}
           <div className="mt-6">
-            <div className="mb-2 text-sm font-medium text-slate-400">Bloques de hoy</div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-400">Bloques de hoy</span>
+              <button
+                onClick={quickAddBlock}
+                className="rounded-lg border border-white/15 px-2.5 py-1 text-xs text-slate-200 hover:bg-white/10"
+              >
+                + Agregar bloque
+              </button>
+            </div>
             <Timeline
               blocks={timed}
               currentId={current?.id ?? null}
               itemsByBlock={itemsByBlock}
               onChange={load}
+              onDelete={removeBlock}
             />
           </div>
 

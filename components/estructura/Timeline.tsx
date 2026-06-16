@@ -11,11 +11,13 @@ export default function Timeline({
   currentId,
   itemsByBlock,
   onChange,
+  onDelete,
 }: {
   blocks: TimedBlock[];
   currentId: string | null;
   itemsByBlock: Record<string, BlockItemView[]>;
   onChange: () => void;
+  onDelete: (b: TimedBlock) => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -45,7 +47,7 @@ export default function Timeline({
         return (
           <div
             key={b.id}
-            className={`flex items-center gap-3 rounded-2xl border p-3 ${
+            className={`group flex items-center gap-3 rounded-2xl border p-3 ${
               active
                 ? 'border-sky-400/50 bg-sky-500/10'
                 : b.done
@@ -89,6 +91,14 @@ export default function Timeline({
               )}
               <div>{b.duration_min}m</div>
             </div>
+
+            <button
+              onClick={() => onDelete(b)}
+              aria-label="Eliminar bloque"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-rose-500/10 hover:text-rose-400"
+            >
+              ✕
+            </button>
           </div>
         );
       })}
