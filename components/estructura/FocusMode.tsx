@@ -56,7 +56,7 @@ export default function FocusMode({
   return (
     <div
       ref={ref}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black px-6 text-slate-100"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black px-4 text-slate-100"
     >
       <button
         onClick={onClose}
@@ -73,7 +73,7 @@ export default function FocusMode({
 
       {/* Barra de progreso fina del bloque */}
       {current && (
-        <div className="h-1.5 w-[min(82vw,640px)] overflow-hidden rounded-full bg-white/10">
+        <div className="h-1.5 w-[min(90vw,1640px)] overflow-hidden rounded-full bg-white/10">
           <div
             className="h-full rounded-full bg-sky-400 transition-[width] duration-1000 ease-linear"
             style={{ width: `${Math.round(info.progress * 100)}%` }}
