@@ -222,3 +222,31 @@ create table if not exists block_day_edits (
 create index if not exists block_day_edits_idx on block_day_edits (routine_id, day);
 alter table block_day_edits disable row level security;
 grant all on table block_day_edits to anon, authenticated;
+
+-- ╔══════════════════════════════════════════════════════════╗
+-- ║  Pensamientos y tareas (bandeja de la cabeza)             ║
+-- ╚══════════════════════════════════════════════════════════╝
+-- Capturás de un toque (tarea o pensamiento/emoción) y queda acá. Después,
+-- tranquilo, lo procesás: una tarea con fecha, o un soltar consciente.
+-- Tabla nueva (no toca `ideas`, que queda para el estacionamiento de Estructura).
+create table if not exists thoughts (
+  id               uuid primary key default gen_random_uuid(),
+  text             text not null,
+  kind             text check (kind in ('task','emotion','note')),     -- null = sin clasificar
+  emotion          text check (emotion in ('ansiedad','culpa','bronca','miedo','tristeza','otra')),
+  intensity        int  check (intensity between 1 and 5),
+  controllable     boolean,
+  status           text not null default 'inbox'
+                     check (status in ('inbox','action','released','done','archived')),
+  action_text      text,          -- el "paso más chico"
+  due_date         date,          -- fecha de la acción (puede no tener hora)
+  linked_block_id  uuid references blocks(id) on delete set null,
+  linked_habit_id  uuid references habits(id) on delete set null,
+  processed_at     timestamptz,
+  created_at       timestamptz not null default now()
+);
+create index if not exists thoughts_status_idx  on thoughts (status, created_at desc);
+create index if not exists thoughts_emotion_idx on thoughts (emotion, created_at desc);
+
+alter table thoughts disable row level security;
+grant all on table thoughts to anon, authenticated;

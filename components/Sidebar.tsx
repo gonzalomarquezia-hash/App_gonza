@@ -8,12 +8,10 @@ const items = [
   { href: '/montana', label: 'Montaña', icon: '🏔️' },
   { href: '/habitos', label: 'Hábitos', icon: '✅' },
   { href: '/estructura', label: 'Estructura', icon: '🧭' },
+  { href: '/pensamientos', label: 'Pensamientos', icon: '📝' },
 ];
 
-const soon = [
-  { label: 'Proyectos', icon: '📁' },
-  { label: 'Pensamientos', icon: '📝' },
-];
+const soon = [{ label: 'Proyectos', icon: '📁' }];
 
 export default function Sidebar() {
   const path = usePathname();

@@ -129,6 +129,35 @@ export interface ActiveBlockInfo {
   progress: number; // 0..1 consumido del bloque actual
 }
 
+// ── Pensamientos y tareas ───────────────────────────────────
+
+// task = algo para hacer · emotion = algo que sentís · note = anotación suelta.
+// null = capturado y sin clasificar todavía.
+export type ThoughtKind = 'task' | 'emotion' | 'note';
+
+export type Emotion = 'ansiedad' | 'culpa' | 'bronca' | 'miedo' | 'tristeza' | 'otra';
+
+// inbox = sin procesar · action = derivó en una acción (con o sin fecha) ·
+// released = soltado (no lo controlo) · done = tarea/acción completada ·
+// archived = descartado.
+export type ThoughtStatus = 'inbox' | 'action' | 'released' | 'done' | 'archived';
+
+export interface Thought {
+  id: string;
+  text: string;
+  kind: ThoughtKind | null;
+  emotion: Emotion | null;
+  intensity: number | null; // 1..5
+  controllable: boolean | null;
+  status: ThoughtStatus;
+  action_text: string | null; // el "paso más chico"
+  due_date: string | null; // YYYY-MM-DD (puede no tener hora)
+  linked_block_id: string | null;
+  linked_habit_id: string | null;
+  processed_at: string | null;
+  created_at: string;
+}
+
 export interface HabitStats {
   streak: number;
   lifetime: number;

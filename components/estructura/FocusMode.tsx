@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { X, Clock, ListChecks } from 'lucide-react';
-import type { ActiveBlockInfo, BlockItemView, Idea } from '@/lib/types';
+import type { ActiveBlockInfo, BlockItemView } from '@/lib/types';
 import { fmtDuration, minToClock } from '@/lib/estructura';
-import IdeaCapture from './IdeaCapture';
+import ThoughtCapture from './ThoughtCapture';
 import Checklist from './Checklist';
 import FlipClock from './FlipClock';
 
@@ -15,7 +15,6 @@ export default function FocusMode({
   onToggleMode,
   nowClock,
   items,
-  ideas,
   hasNext,
   onPostponeAll,
   onPushNext,
@@ -27,7 +26,6 @@ export default function FocusMode({
   onToggleMode: () => void;
   nowClock: string;
   items: BlockItemView[];
-  ideas: Idea[];
   hasNext: boolean;
   onPostponeAll: (min: number) => void;
   onPushNext: (min: number) => void;
@@ -151,7 +149,7 @@ export default function FocusMode({
                 <Checklist items={items} blockId={current.id} onChange={onChange} />
               </div>
             )}
-            <IdeaCapture ideas={ideas} blockId={current?.id ?? null} onChange={onChange} compact />
+            <ThoughtCapture onSaved={onChange} compact />
             <button
               onClick={() => setShowExtras(false)}
               className="mx-auto block text-xs text-slate-500 hover:text-slate-300"
@@ -164,7 +162,7 @@ export default function FocusMode({
             onClick={() => setShowExtras(true)}
             className="mx-auto flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-white/10"
           >
-            <ListChecks className="h-4 w-4" /> Tareas e idea
+            <ListChecks className="h-4 w-4" /> Tareas y soltar
           </button>
         )}
       </div>

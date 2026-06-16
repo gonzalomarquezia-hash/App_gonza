@@ -7,7 +7,6 @@ import type {
   Block,
   BlockItem,
   BlockItemView,
-  Idea,
   Habit,
   HabitSchedule,
   CheckinState,
@@ -21,7 +20,6 @@ import {
   getDoneBlockIds,
   getBlockItems,
   getDoneItemIds,
-  getIdeas,
   getHabitSchedules,
   getHabitStatesForDay,
   getBlockDayEdits,
@@ -51,7 +49,7 @@ import { PageContainer, ErrorBox } from '@/components/ui';
 import BigTimer from '@/components/estructura/BigTimer';
 import Agenda from '@/components/estructura/Agenda';
 import Checklist from '@/components/estructura/Checklist';
-import IdeaCapture from '@/components/estructura/IdeaCapture';
+import ThoughtCapture from '@/components/estructura/ThoughtCapture';
 import PostponeBar from '@/components/estructura/PostponeBar';
 import DaySelector from '@/components/estructura/DaySelector';
 import DayProgress from '@/components/estructura/DayProgress';
@@ -72,7 +70,6 @@ export default function Estructura() {
   const [doneIds, setDoneIds] = useState<string[]>([]);
   const [items, setItems] = useState<BlockItem[]>([]);
   const [doneItemIds, setDoneItemIds] = useState<string[]>([]);
-  const [ideas, setIdeas] = useState<Idea[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [schedules, setSchedules] = useState<HabitSchedule[]>([]);
   const [habitStates, setHabitStates] = useState<Record<string, CheckinState>>({});
@@ -95,7 +92,6 @@ export default function Estructura() {
       setRoutines(rs);
       const act = rs.find((r) => r.is_active) ?? rs[0] ?? null;
       setHabits(await getHabits());
-      setIdeas(await getIdeas(day));
       if (act) {
         const bs = await getBlocks(act.id);
         const [ds, done, its, doneIts, scheds, states, ed] = await Promise.all([
@@ -510,10 +506,15 @@ export default function Estructura() {
             )}
           </div>
 
-          {/* Idea rápida */}
+          {/* Captura rápida — tarea o pensamiento/emoción → va a Pensamientos */}
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-2 text-sm font-medium text-slate-300">Sacate la idea de la cabeza</div>
-            <IdeaCapture ideas={ideas} blockId={current?.id ?? null} onChange={load} />
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-300">Sacátelo de la cabeza</span>
+              <a href="/pensamientos" className="text-xs text-sky-300 hover:underline">
+                Ver Pensamientos
+              </a>
+            </div>
+            <ThoughtCapture onSaved={load} />
           </div>
 
           {/* Aplazar todo */}
@@ -585,7 +586,6 @@ export default function Estructura() {
           onToggleMode={() => setMode((m) => (m === 'up' ? 'down' : 'up'))}
           nowClock={nowClockHMS}
           items={currentItems}
-          ideas={ideas}
           hasNext={!!next}
           onPostponeAll={postponeAllDay}
           onPushNext={pushNext}
