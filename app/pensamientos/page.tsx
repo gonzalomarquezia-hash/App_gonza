@@ -69,7 +69,7 @@ export default function Pensamientos() {
       </p>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-2xl border border-white/10 bg-white/5 p-1">
+      <div className="mb-6 flex gap-1 rounded-2xl border border-orange-400/15 bg-orange-400/[0.07] p-1 shadow-[0_6px_28px_-10px_rgba(251,146,60,0.35)]">
         <TabPill active={tab === 'tasks'} onClick={() => setTab('tasks')} activeClass="bg-emerald-500/20 text-emerald-200 border-emerald-500/30">
           Tareas
         </TabPill>
@@ -121,7 +121,7 @@ function TasksTab({ thoughts, onRefresh }: { thoughts: Thought[]; onRefresh: () 
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
           placeholder="¿Qué tenés pendiente?"
-          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm outline-none placeholder:text-slate-500 focus:border-emerald-400/50"
+          className="min-w-0 flex-1 rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2.5 text-sm outline-none placeholder:text-slate-500 focus:border-emerald-400/50"
         />
         <button
           onClick={add}
@@ -217,7 +217,7 @@ function TaskRow({ thought, onRefresh }: { thought: Thought; onRefresh: () => vo
   }
 
   return (
-    <li className="group flex items-center gap-2 rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm hover:border-white/15 hover:bg-white/8">
+    <li className="group flex items-center gap-2 rounded-xl border border-white/8 bg-orange-400/[0.05] px-3 py-2.5 text-sm hover:border-white/15 hover:bg-orange-400/10">
       {/* Checkbox */}
       <button
         onClick={toggleDone}
@@ -318,7 +318,7 @@ function EmotionsTab({ thoughts, onRefresh }: { thoughts: Thought[]; onRefresh: 
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && add()}
             placeholder="¿Qué se te cruzó por la cabeza?"
-            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-indigo-400/50"
+            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-indigo-400/50"
           />
           <EmotionSelect value={emotion} onChange={setEmotion} />
           <button
@@ -452,11 +452,11 @@ function EmotionCard({ thought, onRefresh }: { thought: Thought; onRefresh: () =
 
   return (
     <div
-      className={`group rounded-xl border border-l-4 ${em?.cardBorder ?? 'border-l-slate-500'} border-white/8 ${em?.cardBg ?? 'bg-white/5'} overflow-hidden transition-opacity ${isAction || isReleased ? 'opacity-60' : ''}`}
+      className={`group rounded-xl border border-l-4 ${em?.cardBorder ?? 'border-l-slate-500'} border-white/8 ${em?.cardBg ?? 'bg-orange-400/[0.07]'} overflow-hidden transition-opacity ${isAction || isReleased ? 'opacity-60' : ''}`}
     >
       {/* Cabecera */}
       <div
-        className={`flex items-start gap-3 px-4 py-3 ${isInbox ? 'cursor-pointer hover:bg-white/5' : ''}`}
+        className={`flex items-start gap-3 px-4 py-3 ${isInbox ? 'cursor-pointer hover:bg-orange-400/10' : ''}`}
         onClick={() => isInbox && setExpanded((v) => !v)}
       >
         <span className="mt-0.5 text-2xl leading-none">{em?.emoji ?? '💭'}</span>
@@ -514,7 +514,7 @@ function EmotionCard({ thought, onRefresh }: { thought: Thought; onRefresh: () =
               onKeyDown={(e) => e.key === 'Enter' && createTask()}
               placeholder="Crear tarea a partir de esto…"
               autoFocus
-              className="min-w-0 flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm outline-none placeholder:text-slate-500 focus:border-emerald-400/50"
+              className="min-w-0 flex-1 rounded-lg border border-white/15 bg-orange-400/[0.07] px-3 py-1.5 text-sm outline-none placeholder:text-slate-500 focus:border-emerald-400/50"
             />
             <button
               onClick={createTask}
@@ -569,7 +569,7 @@ function EmotionSelect({ value, onChange }: { value: Emotion; onChange: (v: Emot
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as Emotion)}
-        className="appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pl-3 pr-8 text-sm text-slate-100 outline-none focus:border-indigo-400/50"
+        className="appearance-none rounded-xl border border-white/15 bg-orange-400/[0.07] py-2 pl-3 pr-8 text-sm text-slate-100 outline-none focus:border-indigo-400/50"
       >
         {EMOTIONS.map((e) => (
           <option key={e.value} value={e.value} className="bg-slate-900 text-slate-100">

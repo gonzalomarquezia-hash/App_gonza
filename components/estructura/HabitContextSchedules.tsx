@@ -114,7 +114,7 @@ function RoutineRow({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
       <div className="min-w-[5rem] text-sm font-medium">{routine.name}</div>
       <label className="flex items-center gap-1 text-sm text-slate-400">
         a las
@@ -140,7 +140,7 @@ function RoutineRow({
           <button
             onClick={remove}
             disabled={busy}
-            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10 disabled:opacity-40"
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-300 hover:bg-orange-400/[0.16] disabled:opacity-40"
           >
             Quitar
           </button>

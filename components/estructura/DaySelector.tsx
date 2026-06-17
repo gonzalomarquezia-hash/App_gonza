@@ -26,7 +26,7 @@ export default function DaySelector({
       <button
         onClick={() => onChange(addDays(day, -1))}
         aria-label="Día anterior"
-        className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/10"
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-orange-400/[0.16]"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
@@ -34,7 +34,7 @@ export default function DaySelector({
       <div className="relative">
         <button
           onClick={openPicker}
-          className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-white/10"
+          className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-orange-400/[0.16]"
         >
           <CalendarDays className="h-4 w-4 text-slate-400" />
           {dayLabel(day)}
@@ -51,7 +51,7 @@ export default function DaySelector({
       <button
         onClick={() => onChange(addDays(day, 1))}
         aria-label="Día siguiente"
-        className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/10"
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-orange-400/[0.16]"
       >
         <ChevronRight className="h-5 w-5" />
       </button>

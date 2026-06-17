@@ -344,7 +344,7 @@ export default function Estructura() {
           <h1 className="text-2xl font-semibold">Configurar rutina</h1>
           <button
             onClick={() => setShowEditor(false)}
-            className="rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/10"
+            className="rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-orange-400/[0.16]"
           >
             Listo
           </button>
@@ -371,7 +371,7 @@ export default function Estructura() {
         {active && (
           <button
             onClick={() => setShowEditor((v) => !v)}
-            className="flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+            className="flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-orange-400/[0.16]"
           >
             <Settings className="h-4 w-4" />
             {showEditor ? 'Listo' : 'Configurar'}
@@ -419,7 +419,7 @@ export default function Estructura() {
           </div>
 
           {/* AHORA */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 {!isToday ? (
@@ -451,7 +451,7 @@ export default function Estructura() {
               <button
                 onClick={() => setShowFocus(true)}
                 title="Pantalla completa"
-                className="flex shrink-0 items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-sm hover:bg-white/10"
+                className="flex shrink-0 items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-sm hover:bg-orange-400/[0.16]"
               >
                 <Maximize2 className="h-4 w-4" /> Foco
               </button>
@@ -465,13 +465,13 @@ export default function Estructura() {
                     <div className="mt-3 inline-flex rounded-xl border border-white/15 p-0.5 text-sm">
                       <button
                         onClick={() => setMode('up')}
-                        className={`rounded-lg px-3 py-1 ${mode === 'up' ? 'bg-white/10 text-white' : 'text-slate-400'}`}
+                        className={`rounded-lg px-3 py-1 ${mode === 'up' ? 'bg-orange-400/[0.12] text-white' : 'text-slate-400'}`}
                       >
                         Transcurrido
                       </button>
                       <button
                         onClick={() => setMode('down')}
-                        className={`rounded-lg px-3 py-1 ${mode === 'down' ? 'bg-white/10 text-white' : 'text-slate-400'}`}
+                        className={`rounded-lg px-3 py-1 ${mode === 'down' ? 'bg-orange-400/[0.12] text-white' : 'text-slate-400'}`}
                       >
                         Restante
                       </button>
@@ -507,7 +507,7 @@ export default function Estructura() {
           </div>
 
           {/* Captura rápida — tarea o pensamiento/emoción → va a Pensamientos */}
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-orange-400/[0.07] p-4">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-medium text-slate-300">Sacátelo de la cabeza</span>
               <a href="/pensamientos" className="text-xs text-sky-300 hover:underline">
@@ -528,7 +528,7 @@ export default function Estructura() {
               <span className="text-sm font-medium text-slate-400">Agenda · {dayLabel(day)}</span>
               <button
                 onClick={() => setShowQuickAgenda((v) => !v)}
-                className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1 text-xs text-slate-200 hover:bg-white/10"
+                className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1 text-xs text-slate-200 hover:bg-orange-400/[0.16]"
               >
                 <Plus className="h-3.5 w-3.5" /> Bloque
               </button>

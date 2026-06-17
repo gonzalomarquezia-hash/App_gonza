@@ -82,7 +82,7 @@ export default function Inicio() {
         {habits.map((h) => {
           const stats = computeStats(h, checkins[h.id] ?? []);
           return (
-            <div key={h.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div key={h.id} className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="font-medium">{h.name}</div>
@@ -104,7 +104,7 @@ export default function Inicio() {
                       className={`rounded-xl border px-3 py-2 text-sm font-medium ${
                         stats.todayState === 'done'
                           ? 'border-emerald-400 bg-emerald-500 text-slate-950'
-                          : 'border-white/15 text-slate-200 hover:bg-white/10'
+                          : 'border-white/15 text-slate-200 hover:bg-orange-400/[0.16]'
                       }`}
                     >
                       Hecho
@@ -114,7 +114,7 @@ export default function Inicio() {
                       className={`rounded-xl border px-3 py-2 text-sm font-medium ${
                         stats.todayState === 'miss'
                           ? 'border-rose-400 bg-rose-500 text-slate-950'
-                          : 'border-white/15 text-slate-200 hover:bg-white/10'
+                          : 'border-white/15 text-slate-200 hover:bg-orange-400/[0.16]'
                       }`}
                     >
                       No

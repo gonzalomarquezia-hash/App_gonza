@@ -73,7 +73,7 @@ export default function RoutineEditor({
   // Sin rutina: solo el alta de la primera.
   if (!routine) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+      <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-6 text-center">
         <p className="mb-1 text-slate-200">Todavía no tenés ninguna rutina.</p>
         <p className="mb-4 text-sm text-slate-400">
           Creá una (ej: Casa o Local) y después le agregás los bloques del día.
@@ -84,12 +84,12 @@ export default function RoutineEditor({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addRoutine()}
             placeholder="Ej: Casa"
-            className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-sky-400/50"
+            className="flex-1 rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none focus:border-sky-400/50"
           />
           <select
             value={newContext}
             onChange={(e) => setNewContext(e.target.value)}
-            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
+            className="rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none"
           >
             <option value="casa">Casa</option>
             <option value="local">Local</option>
@@ -109,7 +109,7 @@ export default function RoutineEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-4">
       <h2 className="mb-1 text-lg font-semibold">Configurar</h2>
       <p className="mb-4 text-sm text-slate-400">
         Editás los bloques de <b>{routine.name}</b>. Los horarios son fijos; para correr todo un
@@ -137,7 +137,7 @@ export default function RoutineEditor({
 
       <button
         onClick={addBlock}
-        className="mt-3 w-full rounded-xl border border-dashed border-white/20 py-2 text-sm text-slate-300 hover:bg-white/5"
+        className="mt-3 w-full rounded-xl border border-dashed border-white/20 py-2 text-sm text-slate-300 hover:bg-orange-400/10"
       >
         + Agregar bloque
       </button>
@@ -153,12 +153,12 @@ export default function RoutineEditor({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addRoutine()}
             placeholder="Ej: Local"
-            className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-sky-400/50"
+            className="flex-1 rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none focus:border-sky-400/50"
           />
           <select
             value={newContext}
             onChange={(e) => setNewContext(e.target.value)}
-            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
+            className="rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none"
           >
             <option value="casa">Casa</option>
             <option value="local">Local</option>
@@ -209,13 +209,13 @@ function RoutineHeader({
         value={name}
         onChange={(e) => setName(e.target.value)}
         onBlur={save}
-        className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium outline-none focus:border-sky-400/50"
+        className="flex-1 rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm font-medium outline-none focus:border-sky-400/50"
       />
       <select
         value={context}
         onChange={(e) => setContext(e.target.value)}
         onBlur={save}
-        className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none"
+        className="rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none"
       >
         <option value="casa">Casa</option>
         <option value="local">Local</option>
@@ -271,19 +271,19 @@ function BlockRow({
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+    <div className="rounded-xl border border-white/10 bg-orange-400/[0.05] p-3">
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={b.name}
           onChange={(e) => setB({ ...b, name: e.target.value })}
           placeholder="Nombre"
-          className="min-w-[8rem] flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
+          className="min-w-[8rem] flex-1 rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
         />
         <input
           type="time"
           value={b.start_time}
           onChange={(e) => setB({ ...b, start_time: e.target.value })}
-          className="rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
+          className="rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
         />
         <div className="flex items-center gap-1 text-sm text-slate-400">
           <input
@@ -291,7 +291,7 @@ function BlockRow({
             min={1}
             value={b.duration_min}
             onChange={(e) => setB({ ...b, duration_min: Number(e.target.value) })}
-            className="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
+            className="w-16 rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
           />
           min
         </div>
@@ -301,7 +301,7 @@ function BlockRow({
         <select
           value={b.kind}
           onChange={(e) => setB({ ...b, kind: e.target.value as BlockKind })}
-          className="rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none"
+          className="rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none"
         >
           {KINDS.map((k) => (
             <option key={k.value} value={k.value}>
@@ -312,7 +312,7 @@ function BlockRow({
         <select
           value={b.habit_id ?? ''}
           onChange={(e) => setB({ ...b, habit_id: e.target.value || null })}
-          className="min-w-[10rem] flex-1 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none"
+          className="min-w-[10rem] flex-1 rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none"
         >
           <option value="">Sin hábito enlazado</option>
           {habits.map((h) => (
@@ -327,7 +327,7 @@ function BlockRow({
         value={b.description ?? ''}
         onChange={(e) => setB({ ...b, description: e.target.value })}
         placeholder="Descripción (qué hago en este bloque)"
-        className="mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
+        className="mt-2 w-full rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
       />
 
       {/* Checklist plantilla del bloque (se repite cada día) */}
@@ -368,7 +368,7 @@ function DayWindowRow({ routine, onChange }: { routine: Routine; onChange: () =>
   }
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-slate-400">
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-orange-400/[0.05] p-3 text-sm text-slate-400">
       Tu día: me despierto
       <input
         type="time"

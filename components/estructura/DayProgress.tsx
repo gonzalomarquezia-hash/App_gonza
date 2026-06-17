@@ -33,7 +33,7 @@ export default function DayProgress({
   const low = isToday && !ended && !beforeStart && remaining <= 120;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
       <div className="flex items-baseline justify-between gap-2">
         {!isToday ? (
           <span className="text-sm text-slate-400">
@@ -56,7 +56,7 @@ export default function DayProgress({
         </button>
       </div>
 
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-orange-400/[0.12]">
         <div
           className={`h-full rounded-full transition-[width] duration-1000 ease-linear ${
             low ? 'bg-rose-500' : 'bg-sky-400'

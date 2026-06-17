@@ -62,7 +62,7 @@ export default function Checklist({
                 if (e.key === 'Enter') saveEdit(it.id);
                 if (e.key === 'Escape') setEditId(null);
               }}
-              className="min-w-0 flex-1 rounded border border-white/20 bg-white/5 px-2 py-1 outline-none focus:border-sky-400/50"
+              className="min-w-0 flex-1 rounded border border-white/20 bg-orange-400/[0.07] px-2 py-1 outline-none focus:border-sky-400/50"
             />
           ) : (
             <span
@@ -95,7 +95,7 @@ export default function Checklist({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
           placeholder="Agregar tarea…"
-          className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 py-1 text-sm outline-none placeholder:text-slate-600 hover:border-white/15 focus:border-sky-400/50 focus:bg-white/5"
+          className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 py-1 text-sm outline-none placeholder:text-slate-600 hover:border-white/15 focus:border-sky-400/50 focus:bg-orange-400/[0.07]"
         />
       </div>
     </div>

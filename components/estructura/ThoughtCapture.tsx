@@ -79,7 +79,7 @@ export default function ThoughtCapture({
               ? '¿Qué se te cruzó? Anotalo y soltalo…'
               : '¿Qué tenés pendiente? Anotá la tarea…'
           }
-          className="flex-1 resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
+          className="flex-1 resize-none rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
         />
         <button
           onClick={save}
@@ -114,7 +114,7 @@ function NativeSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-xl border border-white/15 bg-white/5 py-2 pl-3 pr-8 text-sm text-slate-100 outline-none focus:border-sky-400/50"
+        className="appearance-none rounded-xl border border-white/15 bg-orange-400/[0.07] py-2 pl-3 pr-8 text-sm text-slate-100 outline-none focus:border-sky-400/50"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value} className="bg-slate-900 text-slate-100">

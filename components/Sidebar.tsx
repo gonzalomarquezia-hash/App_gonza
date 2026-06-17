@@ -27,8 +27,8 @@ export default function Sidebar() {
               href={it.href}
               className={`flex items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-sm ${
                 active
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                  ? 'bg-orange-400/[0.12] text-white'
+                  : 'text-slate-400 hover:bg-orange-400/10 hover:text-slate-200'
               }`}
             >
               <span>{it.icon}</span>

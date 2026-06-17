@@ -49,7 +49,7 @@ export default function PostponeBar({
   const sign = offset > 0 ? '+' : '';
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-medium text-slate-400">Aplazar todo</span>
         <span className={`text-xs ${offset === 0 ? 'text-slate-500' : 'text-amber-300'}`}>
@@ -62,7 +62,7 @@ export default function PostponeBar({
             key={m}
             onClick={() => shift(m)}
             disabled={busy}
-            className="rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-white/10 disabled:opacity-40"
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-sm hover:bg-orange-400/[0.16] disabled:opacity-40"
           >
             +{m}m
           </button>
@@ -74,12 +74,12 @@ export default function PostponeBar({
             onKeyDown={(e) => e.key === 'Enter' && applyCustom()}
             inputMode="numeric"
             placeholder="±min"
-            className="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
+            className="w-16 rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1.5 text-sm outline-none focus:border-sky-400/50"
           />
           <button
             onClick={applyCustom}
             disabled={busy || !custom.trim()}
-            className="rounded-lg border border-white/15 px-2 py-1.5 text-sm hover:bg-white/10 disabled:opacity-40"
+            className="rounded-lg border border-white/15 px-2 py-1.5 text-sm hover:bg-orange-400/[0.16] disabled:opacity-40"
           >
             Aplicar
           </button>
@@ -88,7 +88,7 @@ export default function PostponeBar({
           <button
             onClick={reset}
             disabled={busy}
-            className="ml-auto rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-40"
+            className="ml-auto rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-300 hover:bg-orange-400/[0.16] disabled:opacity-40"
           >
             Volver al horario
           </button>

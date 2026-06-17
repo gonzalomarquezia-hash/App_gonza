@@ -108,7 +108,7 @@ function GapRow({
   return (
     <button
       onClick={() => onFill(startMin)}
-      className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-white/10 p-3 text-left hover:bg-white/[0.03]"
+      className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-white/10 p-3 text-left hover:bg-orange-400/[0.05]"
     >
       <span className="w-14 shrink-0 font-mono text-sm tabular-nums text-slate-600">
         {minToClock(startMin)}
@@ -166,8 +166,8 @@ function BlockRow({
         active
           ? 'border-sky-400/50 bg-sky-500/10'
           : b.done
-            ? 'border-white/10 bg-white/[0.02] opacity-60'
-            : 'border-white/10 bg-white/5'
+            ? 'border-white/10 bg-orange-400/[0.04] opacity-60'
+            : 'border-white/10 bg-orange-400/[0.07]'
       }`}
     >
       <div className="flex items-center gap-2 p-3">
@@ -237,7 +237,7 @@ function BlockRow({
         <button
           onClick={onOpen}
           aria-label="Editar"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-white/10 hover:text-slate-200"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-orange-400/[0.16] hover:text-slate-200"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
@@ -255,7 +255,7 @@ function BlockRow({
                 onBlur={(e) =>
                   e.target.value && e.target.value !== timeVal && onSetTime(b, e.target.value)
                 }
-                className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-slate-100 outline-none focus:border-sky-400/50"
+                className="rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1 text-slate-100 outline-none focus:border-sky-400/50"
               />
             </label>
             <label className="flex items-center gap-1 text-slate-500">
@@ -264,12 +264,12 @@ function BlockRow({
                 value={dur}
                 onChange={(e) => setDur(e.target.value)}
                 inputMode="numeric"
-                className="w-12 rounded-lg border border-white/15 bg-white/5 px-2 py-1 outline-none focus:border-sky-400/50"
+                className="w-12 rounded-lg border border-white/15 bg-orange-400/[0.07] px-2 py-1 outline-none focus:border-sky-400/50"
               />
               min
               <button
                 onClick={() => onSetDuration(b, Number(dur) || b.duration_min)}
-                className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 hover:bg-white/10"
+                className="rounded-lg border border-white/15 px-2 py-1 text-slate-200 hover:bg-orange-400/[0.16]"
               >
                 ok
               </button>
@@ -286,14 +286,14 @@ function BlockRow({
             {b.edited && (
               <button
                 onClick={() => onRestore(b)}
-                className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1 text-slate-300 hover:bg-white/10"
+                className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1 text-slate-300 hover:bg-orange-400/[0.16]"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> restaurar
               </button>
             )}
             <button
               onClick={() => onSkip(b)}
-              className="rounded-lg border border-white/15 px-2 py-1 text-slate-300 hover:bg-white/10"
+              className="rounded-lg border border-white/15 px-2 py-1 text-slate-300 hover:bg-orange-400/[0.16]"
             >
               sacar de hoy
             </button>

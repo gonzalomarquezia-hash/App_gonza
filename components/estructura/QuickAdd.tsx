@@ -31,7 +31,7 @@ export default function QuickAdd({
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
         placeholder={placeholder}
-        className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
+        className="min-w-0 flex-1 rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
       />
       <button
         onClick={submit}

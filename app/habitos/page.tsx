@@ -79,7 +79,7 @@ export default function Habitos() {
 
       {error && <ErrorBox msg={error} />}
 
-      <form onSubmit={add} className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <form onSubmit={add} className="mb-6 rounded-2xl border border-white/10 bg-orange-400/[0.07] p-4">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -93,7 +93,7 @@ export default function Habitos() {
             className={`rounded-xl border px-3 py-2 text-sm ${
               type === 'do'
                 ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                : 'border-white/15 text-slate-300 hover:bg-white/5'
+                : 'border-white/15 text-slate-300 hover:bg-orange-400/10'
             }`}
           >
             🟢 Hacer
@@ -104,7 +104,7 @@ export default function Habitos() {
             className={`rounded-xl border px-3 py-2 text-sm ${
               type === 'avoid'
                 ? 'border-rose-400 bg-rose-500/15 text-rose-300'
-                : 'border-white/15 text-slate-300 hover:bg-white/5'
+                : 'border-white/15 text-slate-300 hover:bg-orange-400/10'
             }`}
           >
             🔴 No hacer
@@ -125,7 +125,7 @@ export default function Habitos() {
                 className={`h-9 w-9 rounded-lg text-sm ${
                   on
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
-                    : 'border border-white/15 text-slate-500 hover:bg-white/5'
+                    : 'border border-white/15 text-slate-500 hover:bg-orange-400/10'
                 }`}
               >
                 {lbl}
@@ -144,7 +144,7 @@ export default function Habitos() {
               className={`rounded-xl border px-3 py-2 text-sm ${
                 schedMode === m
                   ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                  : 'border-white/15 text-slate-300 hover:bg-white/5'
+                  : 'border-white/15 text-slate-300 hover:bg-orange-400/10'
               }`}
             >
               {m === 'none' ? 'Sin horario' : m === 'window' ? 'Ventana' : 'Temporizador'}
@@ -205,7 +205,7 @@ export default function Habitos() {
           {habits.map((h) => (
             <div
               key={h.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-orange-400/[0.07] px-4 py-3"
             >
               <Link
                 href={`/habitos/${h.id}`}

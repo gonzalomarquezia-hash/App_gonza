@@ -42,11 +42,11 @@ export default function HabitCalendar({
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
       <div className="mb-3 flex items-center justify-between">
         <button
           onClick={() => shiftMonth(-1)}
-          className="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-white/10"
+          className="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-orange-400/[0.16]"
         >
           ‹
         </button>
@@ -55,7 +55,7 @@ export default function HabitCalendar({
         </div>
         <button
           onClick={() => shiftMonth(1)}
-          className="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-white/10"
+          className="rounded-lg px-2 py-1 text-sm text-slate-400 hover:bg-orange-400/[0.16]"
         >
           ›
         </button>

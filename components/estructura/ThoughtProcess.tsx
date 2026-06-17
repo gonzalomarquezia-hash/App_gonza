@@ -72,7 +72,7 @@ export default function ThoughtProcess({
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="shrink-0 rounded-full border border-white/15 p-1.5 text-slate-300 hover:bg-white/10"
+            className="shrink-0 rounded-full border border-white/15 p-1.5 text-slate-300 hover:bg-orange-400/[0.16]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -87,7 +87,7 @@ export default function ThoughtProcess({
                 <button
                   key={k}
                   onClick={() => setKind(k)}
-                  className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
+                  className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-200 hover:bg-orange-400/[0.16]"
                 >
                   {KIND_LABEL[k]}
                 </button>
@@ -95,7 +95,7 @@ export default function ThoughtProcess({
               <button
                 onClick={discard}
                 disabled={busy}
-                className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-500 hover:bg-white/10"
+                className="rounded-xl border border-white/15 px-3 py-2 text-sm text-slate-500 hover:bg-orange-400/[0.16]"
               >
                 Descartar
               </button>
@@ -114,7 +114,7 @@ export default function ThoughtProcess({
                     key={e.value}
                     onClick={() => setEmotion(e.value)}
                     className={`rounded-lg border px-2.5 py-1 text-xs ${
-                      emotion === e.value ? e.chip + ' bg-white/5' : 'border-white/10 text-slate-400'
+                      emotion === e.value ? e.chip + ' bg-orange-400/[0.07]' : 'border-white/10 text-slate-400'
                     }`}
                   >
                     {e.label}
@@ -133,7 +133,7 @@ export default function ThoughtProcess({
                     className={`h-9 w-9 rounded-lg border text-sm ${
                       intensity === n
                         ? 'border-sky-400 bg-sky-500/20 text-sky-100'
-                        : 'border-white/10 text-slate-400 hover:bg-white/5'
+                        : 'border-white/10 text-slate-400 hover:bg-orange-400/10'
                     }`}
                   >
                     {n}
@@ -150,7 +150,7 @@ export default function ThoughtProcess({
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm ${
                     controllable === true
                       ? 'border-emerald-400 bg-emerald-500/15 text-emerald-100'
-                      : 'border-white/15 text-slate-200 hover:bg-white/10'
+                      : 'border-white/15 text-slate-200 hover:bg-orange-400/[0.16]'
                   }`}
                 >
                   Sí, puedo hacer algo
@@ -160,7 +160,7 @@ export default function ThoughtProcess({
                   className={`flex-1 rounded-xl border px-3 py-2 text-sm ${
                     controllable === false
                       ? 'border-sky-400 bg-sky-500/15 text-sky-100'
-                      : 'border-white/15 text-slate-200 hover:bg-white/10'
+                      : 'border-white/15 text-slate-200 hover:bg-orange-400/[0.16]'
                   }`}
                 >
                   No depende de mí
@@ -170,7 +170,7 @@ export default function ThoughtProcess({
 
             {/* No lo controlo → soltar */}
             {controllable === false && (
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="rounded-xl border border-white/10 bg-orange-400/[0.07] p-3">
                 <p className="text-sm text-slate-300">
                   Esto no está en tus manos hoy. Reconocerlo ya baja. ¿Lo soltás?
                 </p>
@@ -249,7 +249,7 @@ function ActionForm({
           value={actionText}
           onChange={(e) => setActionText(e.target.value)}
           placeholder="Ej: listar gastos fijos"
-          className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
+          className="w-full rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
         />
       </div>
       <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ function ActionForm({
           value={dueDate}
           min={todayStr()}
           onChange={(e) => setDueDate(e.target.value)}
-          className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-400/50"
+          className="rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-400/50"
         />
         {dueDate && (
           <button onClick={() => setDueDate('')} className="text-xs text-slate-500 hover:text-slate-300">

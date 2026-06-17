@@ -52,7 +52,7 @@ export default function IdeaCapture({
           onKeyDown={onKey}
           rows={compact ? 1 : 2}
           placeholder="¿Te vino una idea? Anotala y soltala…"
-          className="flex-1 resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
+          className="flex-1 resize-none rounded-xl border border-white/15 bg-orange-400/[0.07] px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-sky-400/50"
         />
         <button
           onClick={save}
@@ -69,7 +69,7 @@ export default function IdeaCapture({
           {ideas.map((it) => (
             <li
               key={it.id}
-              className="group flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-white/5"
+              className="group flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-orange-400/10"
             >
               <input
                 type="checkbox"

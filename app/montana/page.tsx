@@ -288,7 +288,7 @@ export default function Montana() {
               </div>
 
               {selCampDay != null && (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="mt-4 rounded-2xl border border-white/10 bg-orange-400/[0.07] p-4">
                   <div className="flex items-center justify-between">
                     <div className="font-medium">Campamento · {selCampDay} días</div>
                     {stats.streak >= selCampDay ? (

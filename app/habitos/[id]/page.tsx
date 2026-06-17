@@ -259,7 +259,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
               className={`h-9 w-9 rounded-lg text-sm ${
                 on
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
-                  : 'border border-white/15 text-slate-500 hover:bg-white/5'
+                  : 'border border-white/15 text-slate-500 hover:bg-orange-400/10'
               }`}
             >
               {lbl}
@@ -269,7 +269,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
       </div>
 
       <h2 className="mt-6 mb-2 text-sm font-medium text-slate-300">Horario</h2>
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
         <div className="flex gap-2">
           {(['none', 'window', 'timer'] as const).map((m) => (
             <button
@@ -278,7 +278,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
               className={`rounded-xl border px-3 py-2 text-sm ${
                 schedMode === m
                   ? 'border-emerald-400 bg-emerald-500/15 text-emerald-300'
-                  : 'border-white/15 text-slate-300 hover:bg-white/5'
+                  : 'border-white/15 text-slate-300 hover:bg-orange-400/10'
               }`}
             >
               {m === 'none' ? 'Sin horario' : m === 'window' ? 'Ventana' : 'Temporizador'}
@@ -366,7 +366,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
           {draft.map((c, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-white/10 bg-white/5 p-3"
+              className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3"
             >
               <div className="flex items-center gap-2">
                 <input
@@ -396,7 +396,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
 
           <button
             onClick={addRow}
-            className="w-full rounded-xl border border-dashed border-white/20 px-3 py-2 text-sm text-slate-400 hover:bg-white/5"
+            className="w-full rounded-xl border border-dashed border-white/20 px-3 py-2 text-sm text-slate-400 hover:bg-orange-400/10"
           >
             + Agregar campamento
           </button>
@@ -412,7 +412,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
             <button
               onClick={() => setEditing(false)}
               disabled={saving}
-              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-50"
+              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-orange-400/[0.16] disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -432,7 +432,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
             return (
               <div
                 key={c.day}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-4"
               >
                 <div className="flex items-center justify-between">
                   <div className="font-medium">{c.day} días</div>
@@ -465,7 +465,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
           Supabase (crea la tabla <code>notes</code>) y recargá.
         </div>
       )}
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
         <textarea
           value={noteDraft}
           onChange={(e) => setNoteDraft(e.target.value)}
@@ -487,7 +487,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
       ) : (
         <div className="mt-3 space-y-2">
           {notes.map((n) => (
-            <div key={n.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div key={n.id} className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
               <div className="flex items-start justify-between gap-3">
                 <p className="whitespace-pre-wrap text-sm text-slate-200">{n.text}</p>
                 <button
@@ -508,7 +508,7 @@ export default function HabitoDetalle({ params }: { params: Promise<{ id: string
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <div className="rounded-2xl border border-white/10 bg-orange-400/[0.07] p-3">
       <div className="text-lg font-semibold text-slate-100">{value}</div>
       <div className="truncate text-xs text-slate-300" title={label}>
         {label}

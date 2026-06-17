@@ -69,7 +69,7 @@ export default function FocusMode({
       <button
         onClick={onClose}
         aria-label="Salir"
-        className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-slate-300 hover:bg-white/10"
+        className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-slate-300 hover:bg-orange-400/[0.16]"
       >
         <X className="h-5 w-5" />
       </button>
@@ -79,7 +79,7 @@ export default function FocusMode({
       </button>
 
       {current && (
-        <div className="h-1.5 w-[min(90vw,1640px)] overflow-hidden rounded-full bg-white/10">
+        <div className="h-1.5 w-[min(90vw,1640px)] overflow-hidden rounded-full bg-orange-400/[0.12]">
           <div
             className="h-full rounded-full bg-sky-400 transition-[width] duration-1000 ease-linear"
             style={{ width: `${Math.round(info.progress * 100)}%` }}
@@ -104,7 +104,7 @@ export default function FocusMode({
         {!askDelay ? (
           <button
             onClick={() => setAskDelay(true)}
-            className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-white/10"
+            className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-200 hover:bg-orange-400/[0.16]"
           >
             <Clock className="h-4 w-4" /> +30 min
           </button>
@@ -116,7 +116,7 @@ export default function FocusMode({
                 onPostponeAll(30);
                 setAskDelay(false);
               }}
-              className="rounded-xl border border-white/15 px-3 py-2 text-slate-100 hover:bg-white/10"
+              className="rounded-xl border border-white/15 px-3 py-2 text-slate-100 hover:bg-orange-400/[0.16]"
             >
               Correr todo el día
             </button>
@@ -126,7 +126,7 @@ export default function FocusMode({
                 onPushNext(30);
                 setAskDelay(false);
               }}
-              className="rounded-xl border border-white/15 px-3 py-2 text-slate-100 hover:bg-white/10 disabled:opacity-40"
+              className="rounded-xl border border-white/15 px-3 py-2 text-slate-100 hover:bg-orange-400/[0.16] disabled:opacity-40"
             >
               Sacárselo al próximo
             </button>
@@ -160,7 +160,7 @@ export default function FocusMode({
         ) : (
           <button
             onClick={() => setShowExtras(true)}
-            className="mx-auto flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-white/10"
+            className="mx-auto flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm text-slate-300 hover:bg-orange-400/[0.16]"
           >
             <ListChecks className="h-4 w-4" /> Tareas y soltar
           </button>

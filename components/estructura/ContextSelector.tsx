@@ -52,7 +52,7 @@ export default function ContextSelector({
                   onSwitch(r.id);
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-white/10"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-orange-400/[0.16]"
               >
                 <Icon context={r.context} />
                 <span className="flex-1">{r.name}</span>
@@ -64,7 +64,7 @@ export default function ContextSelector({
                 onCreate();
                 setOpen(false);
               }}
-              className="flex w-full items-center gap-2 border-t border-white/10 px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/10"
+              className="flex w-full items-center gap-2 border-t border-white/10 px-3 py-2 text-left text-sm text-slate-300 hover:bg-orange-400/[0.16]"
             >
               <Plus className="h-4 w-4" /> Nueva rutina
             </button>

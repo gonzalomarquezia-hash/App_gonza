@@ -13,7 +13,12 @@
 }
 
 body {
-  background: var(--background);
+  /* Base azul con una difuminación naranja cálida (arriba y abajo), sutil. */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(80rem 50rem at 75% -10%, rgba(251, 146, 60, 0.1), transparent 60%),
+    radial-gradient(60rem 40rem at 10% 110%, rgba(251, 146, 60, 0.06), transparent 55%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
